@@ -2,6 +2,8 @@ from pydantic import BaseModel, Field, EmailStr, validator
 from typing import Optional
 from datetime import datetime
 from backend.app.models.enums import Status
+from backend.app.models.cv import CV
+
 
 class Applicant(BaseModel):
     applicant_id: Optional[int]
@@ -16,6 +18,7 @@ class Applicant(BaseModel):
     comments: Optional[str] = None
     status: Status = Status.Pending
     duplicate_flag: bool = False
+    cv: Optional[CV] = None
     cv_filename: Optional[str] = None
     cv_url: Optional[str] = None
     submitted_at: Optional[datetime] = None
