@@ -4,7 +4,8 @@ from mongoengine import (
     IntField,
     BooleanField,
     DateTimeField,
-    EmailField
+    EmailField,
+    ReferenceField
 )
 from datetime import datetime, timezone
 
@@ -43,6 +44,7 @@ class Applicant(Document):
             "Rejected"
         ]
     )
+    updated_by = ReferenceField("Admin", null=True)
 
     duplicate_flag = BooleanField(default=False)
 
