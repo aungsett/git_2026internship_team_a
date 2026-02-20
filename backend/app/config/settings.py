@@ -8,6 +8,11 @@ class Settings(BaseSettings):
     FLASK_ENV: str = "development"
     SECRET_KEY: str = Field(...)
 
+    CLOUDINARY_CLOUD_NAME: str
+    CLOUDINARY_API_KEY: str
+    CLOUDINARY_API_SECRET: str
+
+
     # Mongo
     MONGODB_URI: str = Field(...)
 

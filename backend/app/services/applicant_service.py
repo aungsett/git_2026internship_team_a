@@ -1,5 +1,5 @@
 from datetime import datetime
-from app.services.storage_service import StorageService
+from backend.app.services.storage_service import StorageService
 
 class ApplicantService:
     def __init__(self):

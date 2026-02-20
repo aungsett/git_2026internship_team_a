@@ -1,15 +1,15 @@
 from flask import Flask
 from backend.app.config.database import init_db
-from backend.app.config.settings import settings
+from backend.app.routes.apply_routes import bp as apply_bp
+from backend.app.routes.admin_routes import bp as admin_bp
 
 def create_app():
     app = Flask(__name__)
-    app.config["SECRET_KEY"] = settings.SECRET_KEY
-    # initialize DB
     init_db()
-    # register blueprints later...
+    app.register_blueprint(apply_bp)
+    app.register_blueprint(admin_bp)
     return app
 
 if __name__ == "__main__":
-    create_app().run(debug=(settings.FLASK_ENV == "development"))
-
+    app = create_app()
+    app.run(debug=True)
