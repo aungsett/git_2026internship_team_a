@@ -1,6 +1,6 @@
 from flask import Flask
 from backend.app.config.database import init_db
-from backend.app.routes.apply_routes import bp as apply_bp
+from backend.app.routes.applicant_routes import bp as apply_bp
 from backend.app.routes.admin_routes import bp as admin_bp
 
 def create_app():
