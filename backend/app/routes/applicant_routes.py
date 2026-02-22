@@ -9,7 +9,7 @@ applicant_bp = Blueprint("applicant", __name__, url_prefix="/applicants")
 @applicant_bp.route("", methods=["POST"])
 def create_applicant():
     try:
-        body = request.get_json(silent=True)  # ✅ FIX HERE
+        body = request.get_json(silent=True)  
 
         if not body:
             return jsonify({
