@@ -1,4 +1,5 @@
-from pydantic import BaseSettings, Field
+from pydantic_settings import BaseSettings
+from pydantic import Field
 from pathlib import Path
 from typing import Optional
 
@@ -12,15 +13,12 @@ class Settings(BaseSettings):
     CLOUDINARY_API_KEY: str
     CLOUDINARY_API_SECRET: str
 
-
-    # Mongo
     MONGODB_URI: str = Field(...)
 
     FIREBASE_CREDENTIALS_JSON: Optional[str] = None
     FIREBASE_STORAGE_BUCKET: Optional[str] = None
 
-    MAX_UPLOAD_SIZE: int = 5 * 1024 * 1024 
-
+    MAX_UPLOAD_SIZE: int = 5 * 1024 * 1024
     DEFAULT_PAGE_SIZE: int = 25
 
     class Config:
