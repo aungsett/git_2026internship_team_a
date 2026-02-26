@@ -1,6 +1,6 @@
 from flask import Flask
 from backend.app.config.database import init_db
-from backend.app.routes.applicant_routes import bp as apply_bp
+from backend.app.routes.applicant_routes import applicant_bp
 from backend.app.routes.admin_routes import bp as admin_bp
 import os
 
@@ -8,7 +8,7 @@ def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
     init_db()
-    app.register_blueprint(apply_bp)
+    app.register_blueprint(applicant_bp)
     app.register_blueprint(admin_bp)
     return app
 
