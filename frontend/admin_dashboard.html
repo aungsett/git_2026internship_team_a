@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Applicant Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .table-container {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        th {
+            background-color: #f3f4f6;
+            color: #374151;
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: middle;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        tr:hover td {
+            background-color: #f9fafb;
+        }
+        .filter-select {
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.5rem 2rem 0.5rem 0.75rem;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1.5em 1.5em;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-gray-900">
+
+    <div class="max-w-[1400px] mx-auto p-6">
+        
+        <!-- Top Toolbar & Stats -->
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6">
+            
+            <!-- Filters & Search -->
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="relative">
+                    <input type="text" id="searchInput" placeholder="Search applicants..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none w-64">
+                    <div class="absolute left-3 top-2.5 text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <select class="filter-select bg-white text-sm" id="degreeFilter">
+                    <option value="">Filter by Degree</option>
+                    <option value="B.Tech">B.Tech</option>
+                    <option value="M.Tech">M.Tech</option>
+                    <option value="MS">MS</option>
+                    <option value="IC+">IC+</option>
+                </select>
+
+                <select class="filter-select bg-white text-sm" id="statusFilter">
+                    <option value="">Filter by Status</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Shortlisted">Shortlisted</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+
+                <select class="filter-select bg-white text-sm" id="experienceFilter">
+                    <option value="">Filter by experience</option>
+                    <option value="0">0 years</option>
+                    <option value="2+">2+ years</option>
+                    <option value="4+">4+ years</option>
+                </select>
+
+                <button class="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium shadow-sm flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export to CSV
+                </button>
+            </div>
+
+            <!-- Stats Summary -->
+            <div class="text-right text-sm border-l-4 border-blue-500 pl-4 py-1">
+                <div class="font-semibold text-gray-500">Total displayed: <span class="text-gray-900" id="totalCount">12</span></div>
+                <div class="text-orange-600">Pending: <span class="font-bold" id="pendingCount">0</span></div>
+                <div class="text-green-600">Shortlisted: <span class="font-bold" id="shortlistedCount">0</span></div>
+            </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="bg-white shadow-sm table-container">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr>
+                            <th class="w-10"><input type="checkbox" class="rounded"></th>
+                            <th>Applicant ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Degree</th>
+                            <th>Exp</th>
+                            <th>Preferred Japanese Course</th>
+                            <th>Status</th>
+                            <th>Submitted At</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="applicantTableBody">
+                        <!-- Rows will be injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Footer -->
+            <div class="px-6 py-4 flex items-center justify-center border-t border-gray-200">
+                <nav class="flex items-center gap-4">
+                    <button class="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <span class="text-sm font-medium">Page 1 of 1</span>
+                    <button class="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <div id="viewModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 shadow-2xl relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <h2 class="text-2xl font-bold mb-6 border-bottom pb-4" id="modalName">Applicant Details</h2>
+            <div class="grid grid-cols-2 gap-y-4 text-sm" id="modalBody">
+                <!-- Content injected by JS -->
+            </div>
+            <div class="mt-8 flex justify-end gap-3">
+                <button onclick="closeModal()" class="px-6 py-2 border border-gray-300 rounded hover:bg-gray-50">Close</button>
+                <button class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Download CV</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data with randomized status
+        const statuses = ["Pending", "Shortlisted"];
+        const getRandomStatus = () => statuses[Math.floor(Math.random() * statuses.length)];
+
+        const applicants = [
+            { id: "60001", name: "John Smith", email: "john@123.com", degree: "IC+", exp: "2+", course: "Basic Training", status: getRandomStatus(), date: "14-01-2026" },
+            { id: "60002", name: "Aditya Das", email: "ad@123.com", degree: "B.Tech", exp: "4+", course: "JLPT N1", status: getRandomStatus(), date: "12-12-2022" },
+            { id: "60003", name: "Sam Edwards", email: "se@123.com", degree: "MS", exp: "3+", course: "JLPT N2", status: getRandomStatus(), date: "04-07-2025" },
+            { id: "60004", name: "Jane Doe", email: "jd@123.com", degree: "IC+", exp: "0", course: "JLPT N5", status: getRandomStatus(), date: "13-11-2023" },
+            { id: "60005", name: "Harshit Kumar", email: "hk@123.com", degree: "M.Tech", exp: "3+", course: "JLPT N3", status: getRandomStatus(), date: "30-05-2021" },
+            { id: "60006", name: "Akane Yanagi", email: "ay@123.com", degree: "BS", exp: "0", course: "Basic Training", status: getRandomStatus(), date: "16-09-2023" },
+            { id: "60007", name: "Prathmesh Sai", email: "ps@123.com", degree: "B.Tech", exp: "2+", course: "JLPT N4", status: getRandomStatus(), date: "23-03-2025" },
+            { id: "60008", name: "Samar Sen", email: "ss@123.com", degree: "IC+", exp: "4+", course: "JLPT N1", status: getRandomStatus(), date: "09-08-2024" },
+            { id: "60009", name: "Priya Sharma", email: "priya.s@example.com", degree: "B.Tech", exp: "1+", course: "JLPT N5", status: getRandomStatus(), date: "10-02-2026" },
+            { id: "60010", name: "Michael Chen", email: "m.chen@example.com", degree: "MS", exp: "4+", course: "JLPT N1", status: getRandomStatus(), date: "15-01-2026" },
+            { id: "60011", name: "Sarah Johnson", email: "sarah.j@example.com", degree: "IC+", exp: "2+", course: "Basic Training", status: getRandomStatus(), date: "20-12-2025" },
+            { id: "60012", name: "Kenji Sato", email: "k.sato@example.com", degree: "M.Tech", exp: "3+", course: "JLPT N2", status: getRandomStatus(), date: "05-02-2026" }
+        ];
+
+        function renderTable(data) {
+            const tbody = document.getElementById('applicantTableBody');
+            tbody.innerHTML = data.map(app => `
+                <tr class="transition-colors">
+                    <td><input type="checkbox" class="rounded"></td>
+                    <td class="font-medium text-gray-500">${app.id}</td>
+                    <td class="font-medium">${app.name}</td>
+                    <td class="text-gray-500">${app.email}</td>
+                    <td>${app.degree}</td>
+                    <td>${app.exp}</td>
+                    <td>${app.course}</td>
+                    <td>
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold ${getStatusClass(app.status)}">
+                            ${app.status}
+                        </span>
+                    </td>
+                    <td class="text-gray-500">${app.date}</td>
+                    <td>
+                        <div class="flex items-center justify-center gap-4">
+                            <button onclick="viewApplicant('${app.id}')" class="flex flex-col items-center group">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                <span class="text-[10px] text-gray-400 group-hover:text-blue-600">View</span>
+                            </button>
+                            <button class="flex flex-col items-center group">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                <span class="text-[10px] text-gray-400 group-hover:text-gray-900">Edit</span>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Update stats based on filtered data
+            document.getElementById('totalCount').textContent = data.length;
+            document.getElementById('pendingCount').textContent = data.filter(a => a.status === 'Pending').length;
+            document.getElementById('shortlistedCount').textContent = data.filter(a => a.status === 'Shortlisted').length;
+        }
+
+        function getStatusClass(status) {
+            switch(status) {
+                case 'Pending': return 'bg-orange-100 text-orange-700';
+                case 'Shortlisted': return 'bg-green-100 text-green-700';
+                case 'Rejected': return 'bg-red-100 text-red-700';
+                default: return 'bg-gray-100 text-gray-700';
+            }
+        }
+
+        function viewApplicant(id) {
+            const app = applicants.find(a => a.id === id);
+            if (!app) return;
+
+            document.getElementById('modalName').textContent = `Details for ${app.name}`;
+            document.getElementById('modalBody').innerHTML = `
+                <div class="text-gray-500">Applicant ID:</div><div class="font-semibold">${app.id}</div>
+                <div class="text-gray-500">Email:</div><div class="font-semibold">${app.email}</div>
+                <div class="text-gray-500">Degree:</div><div class="font-semibold">${app.degree}</div>
+                <div class="text-gray-500">Experience:</div><div class="font-semibold">${app.exp} years</div>
+                <div class="text-gray-500">Preferred Japanese Course:</div><div class="font-semibold">${app.course}</div>
+                <div class="text-gray-500">Status:</div><div class="font-semibold">${app.status}</div>
+                <div class="text-gray-500">Submitted At:</div><div class="font-semibold">${app.date}</div>
+            `;
+            document.getElementById('viewModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('viewModal').classList.add('hidden');
+        }
+
+        // Search and Filter Logic
+        function filterData() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const degree = document.getElementById('degreeFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const exp = document.getElementById('experienceFilter').value;
+
+            const filtered = applicants.filter(app => {
+                const matchesSearch = app.name.toLowerCase().includes(search) || app.email.toLowerCase().includes(search) || app.id.includes(search);
+                const matchesDegree = !degree || app.degree === degree;
+                const matchesStatus = !status || app.status === status;
+                const matchesExp = !exp || app.exp === exp;
+                
+                return matchesSearch && matchesDegree && matchesStatus && matchesExp;
+            });
+
+            renderTable(filtered);
+        }
+
+        // Event Listeners
+        document.getElementById('searchInput').addEventListener('input', filterData);
+        document.getElementById('degreeFilter').addEventListener('change', filterData);
+        document.getElementById('statusFilter').addEventListener('change', filterData);
+        document.getElementById('experienceFilter').addEventListener('change', filterData);
+
+        // Initial Render
+        renderTable(applicants);
+    </script>
+</body>
+</html>

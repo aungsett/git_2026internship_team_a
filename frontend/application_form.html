@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Applicant Application Form</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .input-field {
+            border: 1px solid #a1a1aa;
+            border-radius: 2px;
+            padding: 0.5rem;
+            width: 100%;
+            outline: none;
+            background: white;
+        }
+        .input-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.25rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #1f2937;
+        }
+        .select-wrapper {
+            position: relative;
+        }
+        .select-wrapper::after {
+            content: '▼';
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.8rem;
+            pointer-events: none;
+            color: #6b7280;
+        }
+        select {
+            appearance: none;
+        }
+        /* Loading Spinner */
+        .spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border-left-color: #fff;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900 font-sans min-h-screen">
+
+    <!-- Header Navigation -->
+    <header class="p-6 relative">
+        <a href="/" class="absolute left-6 top-8 flex items-center text-gray-600 hover:text-black transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span class="font-medium">Back to Home</span>
+        </a>
+        <h1 class="text-3xl font-normal text-center mt-12 mb-8">Applicant Application Form</h1>
+    </header>
+
+    <!-- Main Form Container -->
+    <main class="max-w-4xl mx-auto px-6 pb-20">
+        <form id="applicationForm" class="space-y-6">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                <!-- Full Name -->
+                <div>
+                    <label for="fullName">Full Name*</label>
+                    <input type="text" id="fullName" name="fullName" class="input-field" required>
+                </div>
+
+                <!-- Date of Birth -->
+                <div>
+                    <label for="dob">Date of Birth*</label>
+                    <input type="date" id="dob" name="dob" class="input-field" required>
+                </div>
+
+                <!-- Email Address -->
+                <div>
+                    <label for="email">Email address*</label>
+                    <input type="email" id="email" name="email" class="input-field" required>
+                </div>
+
+                <!-- Degree -->
+                <div>
+                    <label for="degree">Degree*</label>
+                    <div class="select-wrapper">
+                        <select id="degree" name="degree" class="input-field" required>
+                            <option value="" disabled selected>Select Degree</option>
+                            <option value="highschool">High School</option>
+                            <option value="bachelors">Bachelor's Degree</option>
+                            <option value="masters">Master's Degree</option>
+                            <option value="phd">PhD</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Years of Experience -->
+                <div>
+                    <label for="experience">Years of experience*</label>
+                    <input type="number" id="experience" name="experience" class="input-field" min="0" required>
+                </div>
+
+                <!-- Preferred Course -->
+                <div>
+                    <label for="course">Preferred Japanese Course*</label>
+                    <div class="select-wrapper">
+                        <select id="course" name="course" class="input-field" required>
+                            <option value="" disabled selected>Select Course</option>
+                            <option value="bt">Basic Training</option>
+                            <option value="n5">JLPT N5</option>
+                            <option value="n4">JLPT N4</option>
+                            <option value="n3">JLPT N3</option>
+                            <option value="n2">JLPT N2</option>
+                            <option value="n1">JLPT N1</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Location -->
+                <div class="md:col-span-2">
+                    <label>Location*</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" name="country" placeholder="Country" class="input-field" required>
+                        <input type="text" name="state" placeholder="State" class="input-field" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="pt-2">
+                <label for="comments">Comments (optional)</label>
+                <textarea id="comments" name="comments" rows="6" class="input-field resize-none"></textarea>
+            </div>
+
+            <!-- CV Upload Section -->
+            <div class="pt-2">
+                <label for="cv">Upload CV (PDF, DOC, DOCX)*</label>
+                <div class="flex items-center space-x-4 mt-1">
+                    <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 border border-gray-300 py-1.5 px-4 rounded text-sm transition-colors">
+                        Choose File
+                        <input type="file" id="cv" name="cv" class="hidden" accept=".pdf,.doc,.docx" required onchange="updateFileName(this)">
+                    </label>
+                    <span id="fileNameDisplay" class="text-sm text-gray-500 italic">No file chosen</span>
+                </div>
+            </div>
+
+            <!-- Submit Button (Updated to Blue) -->
+            <div class="pt-6">
+                <button type="submit" id="submitBtn" class="w-full py-3 bg-blue-600 text-white hover:bg-blue-700 transition-all text-lg font-medium tracking-wide flex items-center justify-center rounded shadow-sm">
+                    <span id="btnText">Submit Application</span>
+                </button>
+            </div>
+        </form>
+
+        <!-- Status Modal -->
+        <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+            <div class="bg-white p-8 max-w-sm w-full mx-4 shadow-xl border border-gray-200 text-center">
+                <div id="modalContent">
+                    <h3 id="modalTitle" class="text-xl font-bold mb-2">Success</h3>
+                    <p id="modalMessage" class="text-gray-600 mb-6">Your application has been submitted.</p>
+                </div>
+                <button onclick="closeModal()" class="px-6 py-2 border border-black hover:bg-black hover:text-white transition-colors">Close</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Update file name display
+        function updateFileName(input) {
+            const display = document.getElementById('fileNameDisplay');
+            if (input.files && input.files[0]) {
+                display.textContent = input.files[0].name;
+                display.classList.remove('italic', 'text-gray-500');
+                display.classList.add('text-black');
+            } else {
+                display.textContent = "No file chosen";
+                display.classList.add('italic', 'text-gray-500');
+            }
+        }
+
+        // Handle form submission to your Backend
+        document.getElementById('applicationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            
+            // Set loading state
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="spinner"></span> Submitting...';
+
+            const formData = new FormData(this);
+            
+            try {
+                // Adjust this URL to match your backend port and route
+                const response = await fetch('http://localhost:8000/api/v1/applicants/apply', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    showModal('Application Sent!', 'Thank you for your submission. We will review your application shortly.');
+                    this.reset();
+                    document.getElementById('fileNameDisplay').textContent = "No file chosen";
+                } else {
+                    const errorData = await response.json();
+                    showModal('Error', errorData.detail || 'Something went wrong. Please try again.', true);
+                }
+            } catch (error) {
+                console.error('Submission error:', error);
+                showModal('Network Error', 'Could not connect to the server. Is your backend running?', true);
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Submit Application';
+            }
+        });
+
+        function showModal(title, message, isError = false) {
+            const titleEl = document.getElementById('modalTitle');
+            titleEl.textContent = title;
+            titleEl.className = isError ? 'text-xl font-bold mb-2 text-red-600' : 'text-xl font-bold mb-2 text-green-600';
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
