@@ -6,7 +6,7 @@ from backend.app.models.cv import CV
 
 
 class Applicant(BaseModel):
-    applicant_id: Optional[int]
+    applicant_id: Optional[int] = None
     full_name: str = Field(..., max_length=100)
     dob: str
     email: EmailStr

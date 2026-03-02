@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ATS Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="bg-white p-10 rounded-xl shadow-xl text-center">
+        <h1 class="text-3xl font-bold mb-6">Welcome to ATS Portal</h1>
+
+        <a href="/apply"
+           class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Apply Now
+        </a>
+    </div>
+
+    <script>
+        // Secret Admin Shortcut (Ctrl + A)
+        document.addEventListener("keydown", function(event) {
+            if (event.ctrlKey && event.key === "a") {
+                event.preventDefault();
+                window.location.href = "/admin-login";
+            }
+        });
+    </script>
+
+</body>
+</html>

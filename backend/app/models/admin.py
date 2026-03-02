@@ -6,7 +6,7 @@ from typing import Optional
 from datetime import datetime, timezone
 
 class Admin(BaseModel):
-    admin_id: Optional[int]
+    admin_id: Optional[int] = None
     firebase_uid: str = Field(..., min_length=1)
     username: str = Field(..., min_length=1, max_length=50)
     email: EmailStr

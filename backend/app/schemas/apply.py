@@ -13,8 +13,8 @@ class ApplyRequest(BaseModel):
     location_country: Optional[str] = None
     location_state: Optional[str] = None
     comments: Optional[str] = None
-    cv_filename: str
-    cv_size: int
+    cv_filename: Optional[str] = None
+    cv_size: Optional[int] = None
 
     @validator("dob")
     def _dob_format(cls, v: str) -> str:
@@ -35,3 +35,5 @@ class ApplyRequest(BaseModel):
         if v > MAX_UPLOAD_SIZE:
             raise ValueError("file too large")
         return v
+
+Apply = ApplyRequest
