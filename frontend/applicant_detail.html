@@ -1,0 +1,170 @@
+<!-- frontend/applicant_detail.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Applicant Detail</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* subtle panel look like mockup */
+    .panel {
+      background: #efefef;
+      border: 1px solid #cfcfcf;
+      padding: 1.5rem;
+      border-radius: 6px;
+    }
+    .muted { color:#6b6b6b; }
+    .cv-file {
+      display:flex;
+      align-items:center;
+      gap:0.75rem;
+      background:white;
+      border:1px solid #d3d3d3;
+      padding:0.5rem 0.75rem;
+      border-radius:4px;
+    }
+    .toast {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      background: #1f2937;
+      color: white;
+      padding: .5rem .75rem;
+      border-radius: 6px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-900 min-h-screen">
+
+  <div class="max-w-6xl mx-auto p-8">
+    <button onclick="goBack()" class="mb-8 inline-flex items-center gap-2 px-3 py-2 border rounded shadow-sm bg-white hover:bg-gray-100">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      Back to List
+    </button>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Left: Applicant details -->
+      <section class="panel">
+        <h2 class="text-2xl font-semibold mb-6">Applicant Details</h2>
+
+        <div class="grid grid-cols-2 gap-y-3 gap-x-6 text-sm">
+          <div class="muted">Applicant ID:</div><div id="applicantId" class="font-medium">APP-001</div>
+          <div class="muted">Full Name:</div><div id="fullName" class="font-medium">Amit Sharma</div>
+          <div class="muted">Email:</div><div id="email" class="font-medium">amit@example.com</div>
+          <div class="muted">Date of Birth:</div><div id="dob" class="font-medium">2003-11-24</div>
+          <div class="muted">Degree:</div><div id="degree" class="font-medium">B.Tech</div>
+          <div class="muted">Years of Experience:</div><div id="exp" class="font-medium">2</div>
+          <div class="muted">Preferred course:</div><div id="course" class="font-medium">JLPT N4</div>
+
+          <div class="mt-4"></div><div></div>
+
+          <div class="muted">Location:</div><div id="location" class="font-medium">India, Karnataka</div>
+          <div class="muted">Submitted at:</div><div id="submittedAt" class="font-medium">2026-01-07 10:23</div>
+        </div>
+
+        <div class="mt-6">
+          <div class="muted mb-2">CV Document</div>
+          <div class="cv-file">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14 2v6h6"/></svg>
+            <div class="flex-1">
+              <div id="cvFilename" class="font-medium">CV_Amit_Sharma.pdf</div>
+              <div id="cvSize" class="text-xs muted">120 KB</div>
+            </div>
+            <button onclick="downloadCV()" class="ml-4 px-3 py-1 border rounded bg-white hover:bg-gray-100 text-sm">Download CV</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: Admin actions -->
+      <aside class="panel">
+        <h3 class="text-xl font-semibold mb-4">Admin Actions</h3>
+
+        <div class="mb-4 text-sm">
+          <label class="block muted mb-2">Change Status</label>
+          <select id="statusSelect" class="w-full border rounded p-2 bg-white">
+            <option>Pending</option>
+            <option>Shortlisted</option>
+            <option>Accepted</option>
+            <option>Rejected</option>
+          </select>
+          <button onclick="updateStatus()" class="mt-4 w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Update Status</button>
+        </div>
+
+        <div class="mt-6 text-sm">
+          <label class="block muted mb-2">Private Admin Notes</label>
+          <textarea id="adminNotes" rows="6" class="w-full border rounded p-3 bg-white" placeholder="Add internal notes..."></textarea>
+          <button onclick="saveNotes()" class="mt-3 px-3 py-2 border rounded bg-white hover:bg-gray-100">Save Notes</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Saved</div>
+
+  <script>
+    // static dummy data (replace later by fetching API)
+    const DATA = {
+      applicant_id: "APP-001",
+      full_name: "Amit Sharma",
+      email: "amit@example.com",
+      dob: "2003-11-24",
+      degree: "B.Tech",
+      experience_years: 2,
+      preferred_course: "JLPT N4",
+      location: "India, Karnataka",
+      submitted_at: "2026-01-07 10:23",
+      cv_filename: "CV_Amit_Sharma.pdf",
+      cv_size: "120 KB",
+      cv_url: "https://res.cloudinary.com/demo/raw/upload/sample.pdf"
+    };
+
+    function goBack(){ history.back(); }
+
+    function populate(){
+      document.getElementById('applicantId').textContent = DATA.applicant_id;
+      document.getElementById('fullName').textContent = DATA.full_name;
+      document.getElementById('email').textContent = DATA.email;
+      document.getElementById('dob').textContent = DATA.dob;
+      document.getElementById('degree').textContent = DATA.degree;
+      document.getElementById('exp').textContent = DATA.experience_years;
+      document.getElementById('course').textContent = DATA.preferred_course;
+      document.getElementById('location').textContent = DATA.location;
+      document.getElementById('submittedAt').textContent = DATA.submitted_at;
+      document.getElementById('cvFilename').textContent = DATA.cv_filename;
+      document.getElementById('cvSize').textContent = DATA.cv_size;
+
+      // load saved notes (localStorage for static demo)
+      const saved = localStorage.getItem('notes_' + DATA.applicant_id);
+      if(saved) document.getElementById('adminNotes').value = saved;
+    }
+    function downloadCV(){
+      // opens the CV URL in new tab (replace with signed link in production)
+      window.open(DATA.cv_url, '_blank');
+    }
+    function updateStatus(){
+      const s = document.getElementById('statusSelect').value;
+      // TODO: call backend API. For static demo, show toast.
+      showToast('Status updated to ' + s);
+    }
+    function saveNotes(){
+      const notes = document.getElementById('adminNotes').value;
+      localStorage.setItem('notes_' + DATA.applicant_id, notes);
+      showToast('Notes saved');
+    }
+    function showToast(msg){
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(()=> t.style.display = 'none', 2000);
+    }
+
+    // init
+    populate();
+
+    
+  </script>
+</body>
+</html>
