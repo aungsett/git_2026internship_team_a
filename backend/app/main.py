@@ -53,9 +53,6 @@ def create_app():
 
     @app.route("/admin-dashboard")
     def admin_dashboard():
-        if not session.get("admin_logged_in"):
-            return redirect("/admin-login")
-
         return render_template("admin_dashboard.html")
 
     @app.route("/admin-logout")
