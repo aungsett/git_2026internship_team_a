@@ -10,15 +10,21 @@ bp = Blueprint("admin", __name__, url_prefix="/admin")
 # Auth Helper
 # ---------------------------
 def require_admin():
+    from werkzeug.exceptions import Unauthorized
+
+def require_admin():
     auth_header = request.headers.get("Authorization")
 
     if not auth_header:
-        abort(401, description="Missing Authorization header")
+        raise Unauthorized("Missing Authorization header")
 
-    decoded = AuthService().verify_bearer_token(auth_header)
+    try:
+        decoded = AuthService().verify_bearer_token(auth_header)
+    except ValueError as e:
+        raise Unauthorized(str(e))
 
     if not decoded:
-        abort(401, description="Invalid or expired token")
+        raise Unauthorized("Invalid or expired token")
 
     return decoded
 

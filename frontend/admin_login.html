@@ -10,17 +10,17 @@
     <div class="bg-white p-8 rounded-xl shadow-xl w-96">
         <h2 class="text-2xl font-bold mb-6 text-center">Admin Login</h2>
 
-        <form method="POST" class="space-y-4">
+        <form id="loginForm" class="space-y-4">
             <div>
-                <label class="block text-sm mb-1">Username</label>
-                <input type="text" id="username" name="username"
+                <label class="block text-sm mb-1">Email</label>
+                <input type="email" id="email"
                        class="w-full border px-3 py-2 rounded focus:ring-2 focus:ring-blue-500 outline-none"
                        required>
             </div>
 
             <div>
                 <label class="block text-sm mb-1">Password</label>
-                <input type="password" id="password" name="password"
+                <input type="password" id="password"
                        class="w-full border px-3 py-2 rounded focus:ring-2 focus:ring-blue-500 outline-none"
                        required>
             </div>
@@ -31,12 +31,65 @@
             </button>
         </form>
 
+        <p id="errorMsg" class="text-red-500 text-sm mt-4 text-center hidden"></p>
+
         {% if error %}
         <p class="text-red-500 text-sm mt-4 text-center">
             Invalid credentials
         </p>
         {% endif %}
     </div>
+
+    <script type="module">
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCnWkj3PcSPJIHbYneWyNPidYbtk4oEvWI",
+        authDomain: "ats-hr-2026.firebaseapp.com",
+        projectId: "ats-hr-2026",
+        appId: "1:159537789422:web:f8598f983d3fb4d8ed76ff"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const form = document.getElementById("loginForm");
+    const errorMsg = document.getElementById("errorMsg");
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+            const token = await userCredential.user.getIdToken();
+
+        // Send token to backend
+            const response = await fetch("http://127.0.0.1:5000/admin/ping", {
+                method: "GET",
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            });
+
+            if (response.ok) {
+                window.location.href = "admin-dashboard.html";
+            } else {
+                errorMsg.textContent = "Access denied";
+                errorMsg.classList.remove("hidden");
+            }
+
+        } catch (error) {
+            errorMsg.textContent = error.message;
+            errorMsg.classList.remove("hidden");
+        }
+    });
+    </script>
 
 </body>
 </html>
