@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import importlib
 
 from backend.app.repositories.applicant_repository import ApplicantRepository
+from backend.app.models.counter import Counter
 
 # IMPORTANT: resolve StorageService the same way tests monkeypatch it
 try:
@@ -17,6 +18,31 @@ class ApplicantService:
     def __init__(self) -> None:
         self.repo = ApplicantRepository
         self.storage = StorageService()
+
+    def _next_applicant_id(self) -> int:
+        """
+        Atomically generate the next applicant_id using the 'counters' collection.
+        Starts from 60000 (see Counter default) and increments by 1.
+        """
+        # Simple, non-conflicting strategy:
+        # - If counter exists, just $inc it.
+        # - If not, create it starting at 60000.
+        existing = Counter.objects(name="applicant_id").first()
+        if existing is None:
+            created = Counter(name="applicant_id", value=60000)
+            created.save()
+            return int(created.value)
+
+        updated = Counter.objects(id=existing.id).modify(new=True, inc__value=1)
+        return int(updated.value)
+
+    def create_applicant(self, data: dict, file_obj):
+        """
+        Create a new applicant application from parsed form data and an uploaded CV file.
+        Persists applicant to MongoDB and uploads CV to Cloudinary.
+        """
+        applicant_id = self._next_applicant_id()
+        return self.create_application(data, file_obj, applicant_id)
 
     def create_application(self, data: dict, file_obj, applicant_id: int):
         # duplicate email check

@@ -6,6 +6,13 @@
     <title>Applicant Application Form</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        .apply-bg {
+            background: radial-gradient(circle at top left, #ffe6d5, #f8fafc);
+        }
+        .surface {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.9);
+        }
         .input-field {
             border: 1px solid #a1a1aa;
             border-radius: 2px;
@@ -57,8 +64,9 @@
             to { transform: rotate(360deg); }
         }
     </style>
+    </style>
 </head>
-<body class="bg-white text-gray-900 font-sans min-h-screen">
+<body class="apply-bg text-gray-900 font-sans min-h-screen">
 
     <!-- Header Navigation -->
     <header class="p-6 relative">
@@ -73,6 +81,7 @@
 
     <!-- Main Form Container -->
     <main class="max-w-4xl mx-auto px-6 pb-20">
+        <div class="surface rounded-2xl shadow-2xl border border-white/70 px-8 pt-8 pb-10">
         <form id="applicationForm" class="space-y-6">
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
@@ -207,7 +216,7 @@
             
             try {
                 // Adjust this URL to match your backend port and route
-                const response = await fetch('http://localhost:8000/api/v1/applicants/apply', {
+                const response = await fetch('http://127.0.0.1:5000/applicants', {
                     method: 'POST',
                     body: formData
                 });

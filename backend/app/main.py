@@ -55,6 +55,11 @@ def create_app():
     def admin_dashboard():
         return render_template("admin_dashboard.html")
 
+    # HTML detail view (API lives in admin_routes with same ID path)
+    @app.route("/admin/applicants/<int:applicant_id>/detail")
+    def admin_applicant_detail(applicant_id: int):  # noqa: ARG001 - id used by frontend JS via URL
+        return render_template("applicant_detail.html")
+
     @app.route("/admin-logout")
     def admin_logout():
         session.pop("admin_logged_in", None)

@@ -2,16 +2,31 @@
 <html>
 <head>
     <title>ATS Portal</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .portal-bg {
+            background: radial-gradient(circle at top left, #ffe6d5, #f8fafc);
+        }
+        .portal-card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.85);
+        }
+    </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<body class="portal-bg min-h-screen flex items-center justify-center px-4">
 
-    <div class="bg-white p-10 rounded-xl shadow-xl text-center">
-        <h1 class="text-3xl font-bold mb-6">Welcome to ATS Portal</h1>
+    <div class="max-w-xl w-full portal-card rounded-2xl shadow-2xl border border-white/60 p-10 text-center">
+        <h1 class="text-3xl md:text-4xl font-semibold mb-3 tracking-tight text-gray-900">
+            Welcome to <span class="text-blue-600">ATS Portal</span>
+        </h1>
+        <p class="text-sm md:text-base text-gray-500 mb-8">
+            Submit your application in a few simple steps.
+        </p>
 
         <a href="/apply"
-           class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            Apply Now
+           class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base font-medium shadow-sm">
+            Start Application
         </a>
     </div>
 

@@ -48,6 +48,9 @@ class Applicant(Document):
 
     duplicate_flag = BooleanField(default=False)
 
+    # Internal admin-only notes about this applicant
+    review_comment = StringField()
+
     cv_filename = StringField(required=True)
     cv_url = StringField(required=True)
 

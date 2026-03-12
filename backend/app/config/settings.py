@@ -24,5 +24,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = str(ENV_PATH)
         env_file_encoding = "utf-8"
+        extra = "ignore"
 
 settings = Settings()

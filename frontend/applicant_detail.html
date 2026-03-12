@@ -1,0 +1,228 @@
+<!-- frontend/applicant_detail.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Applicant Detail</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .panel {
+      background: #efefef;
+      border: 1px solid #cfcfcf;
+      padding: 1.5rem;
+      border-radius: 6px;
+    }
+    .muted { color:#6b6b6b; }
+    .cv-file {
+      display:flex;
+      align-items:center;
+      gap:0.75rem;
+      background:white;
+      border:1px solid #d3d3d3;
+      padding:0.5rem 0.75rem;
+      border-radius:4px;
+    }
+    .toast {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      background: #1f2937;
+      color: white;
+      padding: .5rem .75rem;
+      border-radius: 6px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-900 min-h-screen">
+
+  <div class="max-w-6xl mx-auto p-8">
+    <button onclick="goBack()" class="mb-8 inline-flex items-center gap-2 px-3 py-2 border rounded shadow-sm bg-white hover:bg-gray-100">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      Back to List
+    </button>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Left: Applicant details -->
+      <section class="panel">
+        <h2 class="text-2xl font-semibold mb-6">Applicant Details</h2>
+
+        <div class="grid grid-cols-2 gap-y-3 gap-x-6 text-sm">
+          <div class="muted">Applicant ID:</div><div id="applicantId" class="font-medium"></div>
+          <div class="muted">Full Name:</div><div id="fullName" class="font-medium"></div>
+          <div class="muted">Email:</div><div id="email" class="font-medium"></div>
+          <div class="muted">Date of Birth:</div><div id="dob" class="font-medium"></div>
+          <div class="muted">Degree:</div><div id="degree" class="font-medium"></div>
+          <div class="muted">Years of Experience:</div><div id="exp" class="font-medium"></div>
+          <div class="muted">Preferred course:</div><div id="course" class="font-medium"></div>
+
+          <div class="mt-4"></div><div></div>
+
+          <div class="muted">Location:</div><div id="location" class="font-medium"></div>
+          <div class="muted">Submitted at:</div><div id="submittedAt" class="font-medium"></div>
+        </div>
+
+        <div class="mt-6">
+          <div class="muted mb-2">CV Document</div>
+          <div class="cv-file">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14 2v6h6"/></svg>
+            <div class="flex-1">
+              <div id="cvFilename" class="font-medium"></div>
+              <div id="cvSize" class="text-xs muted"></div>
+            </div>
+            <button onclick="downloadCV()" class="ml-4 px-3 py-1 border rounded bg-white hover:bg-gray-100 text-sm">Download CV</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: Admin actions -->
+      <aside class="panel">
+        <h3 class="text-xl font-semibold mb-4">Admin Actions</h3>
+
+        <div class="mb-4 text-sm">
+          <label class="block muted mb-2">Change Status</label>
+          <select id="statusSelect" class="w-full border rounded p-2 bg-white">
+            <option>Pending</option>
+            <option>Shortlisted</option>
+            <option>Accepted</option>
+            <option>Rejected</option>
+          </select>
+          <button onclick="updateStatus()" class="mt-4 w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Update Status</button>
+        </div>
+
+        <div class="mt-6 text-sm">
+          <label class="block muted mb-2">Private Admin Notes</label>
+          <textarea id="adminNotes" rows="6" class="w-full border rounded p-3 bg-white" placeholder="Add internal notes..."></textarea>
+          <button onclick="saveNotes()" class="mt-3 px-3 py-2 border rounded bg-white hover:bg-gray-100">Save Notes</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Saved</div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:5000";
+
+    function getApplicantIdFromPath() {
+      const parts = window.location.pathname.split("/").filter(Boolean);
+      // Expect pattern: /admin/applicants/<id>/detail
+      // So ID is the segment just before "detail"
+      const last = parts[parts.length - 1];
+      let idSegment = last;
+      if (last === "detail" && parts.length >= 1) {
+        idSegment = parts[parts.length - 1 - 1]; // previous segment
+      }
+      const id = parseInt(idSegment, 10);
+      return Number.isNaN(id) ? null : id;
+    }
+
+    function goBack(){ window.location.href = "/admin-dashboard"; }
+
+    function ensureToken() {
+      const token = localStorage.getItem("admin_id_token");
+      if (!token) {
+        window.location.href = "/admin-login";
+        return null;
+      }
+      return token;
+    }
+
+    function showToast(msg){
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(()=> t.style.display = 'none', 2000);
+    }
+
+    let CURRENT = null;
+
+    async function loadApplicant() {
+      const token = ensureToken();
+      if (!token) return;
+      const id = getApplicantIdFromPath();
+      if (!id) {
+        alert("Missing applicant id in URL.");
+        return;
+      }
+      try {
+        const resp = await fetch(`${API_BASE}/admin/applicants/${id}`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!resp.ok) {
+          throw new Error(`Failed to load applicant (${resp.status})`);
+        }
+        const a = await resp.json();
+        CURRENT = a;
+
+        document.getElementById('applicantId').textContent = a.applicant_id;
+        document.getElementById('fullName').textContent = a.full_name || "";
+        document.getElementById('email').textContent = a.email || "";
+        document.getElementById('dob').textContent = a.dob || "";
+        document.getElementById('degree').textContent = a.degree || "";
+        document.getElementById('exp').textContent = a.experience_years ?? "";
+        document.getElementById('course').textContent = a.preferred_course || "";
+        document.getElementById('location').textContent =
+          [a.location_country, a.location_state].filter(Boolean).join(", ");
+        document.getElementById('submittedAt').textContent = a.submitted_at || "";
+
+        document.getElementById('cvFilename').textContent = a.cv_filename || "";
+        document.getElementById('cvSize').textContent = ""; // size not tracked in DB
+
+        document.getElementById('statusSelect').value = a.status || "Pending";
+        document.getElementById('adminNotes').value = a.review_comment || "";
+      } catch (e) {
+        console.error(e);
+        alert("Could not load applicant.");
+      }
+    }
+
+    function downloadCV(){
+      if (CURRENT && CURRENT.cv_url) {
+        window.open(CURRENT.cv_url, "_blank");
+      } else {
+        alert("No CV URL available.");
+      }
+    }
+
+    async function updateStatus(){
+      const token = ensureToken();
+      if (!token || !CURRENT) return;
+      const newStatus = document.getElementById('statusSelect').value;
+      const id = CURRENT.applicant_id;
+      try {
+        const resp = await fetch(`${API_BASE}/admin/applicants/${id}/status`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            status: newStatus,
+            admin_comment: document.getElementById('adminNotes').value || null
+          })
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+          throw new Error(data?.error?.message || "Failed to update status");
+        }
+        showToast("Status updated");
+      } catch (e) {
+        console.error(e);
+        alert(e.message || "Failed to update status");
+      }
+    }
+
+    async function saveNotes(){
+      // Re-use the status endpoint: send current status + updated comment
+      if (!CURRENT) return;
+      await updateStatus();
+    }
+
+    loadApplicant();
+  </script>
+</body>
+</html>
+

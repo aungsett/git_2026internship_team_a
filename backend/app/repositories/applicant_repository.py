@@ -2,21 +2,44 @@
 from typing import Optional, List, Dict, Any, Union
 import importlib
 from types import SimpleNamespace
+from mongoengine import Document as MongoEngineDocument
 
-# Try to import the module path that unit tests may patch ('app.models.applicant'),
-# otherwise fall back to the real package path used by the running app.
-try:
-    applicant_mod = importlib.import_module("app.models.applicant")
-except Exception:
-    applicant_mod = importlib.import_module("backend.app.models.applicant")
+# Resolve the MongoEngine Applicant Document.
+# In this repo we have:
+# - `backend.app.models.applicant_model.Applicant` (MongoEngine Document)
+# - `backend.app.models.applicant.Applicant` (Pydantic model)
+#
+# Tests may monkeypatch `app.models.*`, so we try several module paths.
+_CANDIDATE_MODULES = (
+    "app.models.applicant_model",
+    "backend.app.models.applicant_model",
+    "app.models.applicant",
+    "backend.app.models.applicant",
+)
 
-# Prefer an explicit Document class name if available
-ApplicantDoc = getattr(applicant_mod, "ApplicantDocument", None) or getattr(applicant_mod, "Applicant", None)
+ApplicantDoc = None
+for _mod_name in _CANDIDATE_MODULES:
+    try:
+        _mod = importlib.import_module(_mod_name)
+    except Exception:
+        continue
+    # Prefer explicit Document name if available, otherwise fall back to "Applicant"
+    _cand = getattr(_mod, "ApplicantDocument", None) or getattr(_mod, "Applicant", None)
+    # Avoid touching MongoEngine's `.objects` manager at import time (it can require an active connection).
+    if _cand is not None and isinstance(_cand, type) and issubclass(_cand, MongoEngineDocument):
+        ApplicantDoc = _cand
+        break
+
 if ApplicantDoc is None:
-    raise ImportError("Could not find Applicant class in app.models.applicant or backend.app.models.applicant")
+    # As a last resort, allow non-ORM paths (unit tests) to proceed using in-memory store
+    try:
+        applicant_mod = importlib.import_module("backend.app.models.applicant")
+        ApplicantDoc = getattr(applicant_mod, "Applicant", None)
+    except Exception:
+        ApplicantDoc = None
 
-# Detect whether this ApplicantDoc is a MongoEngine Document (has .objects)
-_HAS_ORM = hasattr(ApplicantDoc, "objects")
+# Detect whether this ApplicantDoc is a MongoEngine Document (without touching `.objects`)
+_HAS_ORM = isinstance(ApplicantDoc, type) and issubclass(ApplicantDoc, MongoEngineDocument)
 
 # Fallback in-memory store for tests or non-DB environment
 _in_memory_store: List[SimpleNamespace] = []
@@ -99,12 +122,17 @@ class ApplicantRepository:
         return filtered[start:start + limit]
 
     @staticmethod
-    def update_status(applicant_id: int, new_status: str) -> bool:
+    def update_status(applicant_id: int, new_status: str, admin_comment: Optional[str] = None) -> bool:
+        update_kwargs: Dict[str, Any] = {"set__status": new_status}
+        if admin_comment is not None:
+            update_kwargs["set__review_comment"] = admin_comment
         if _HAS_ORM:
-            updated = ApplicantDoc.objects(applicant_id=applicant_id).update_one(set__status=new_status)
+            updated = ApplicantDoc.objects(applicant_id=applicant_id).update_one(**update_kwargs)
             return updated == 1
         for item in _in_memory_store:
             if item.get("applicant_id") == applicant_id:
                 item["status"] = new_status
+                if admin_comment is not None:
+                    item["review_comment"] = admin_comment
                 return True
         return False

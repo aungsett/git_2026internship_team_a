@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, Response, abort
-from werkzeug.exceptions import HTTPException
+from werkzeug.exceptions import HTTPException, Unauthorized
 from backend.app.services.admin_service import AdminService
 from backend.app.services.auth_service import AuthService
 
@@ -9,9 +9,6 @@ bp = Blueprint("admin", __name__, url_prefix="/admin")
 # ---------------------------
 # Auth Helper
 # ---------------------------
-def require_admin():
-    from werkzeug.exceptions import Unauthorized
-
 def require_admin():
     auth_header = request.headers.get("Authorization")
 
@@ -123,12 +120,17 @@ def get_applicant(applicant_id):
             "applicant_id": applicant.applicant_id,
             "full_name": applicant.full_name,
             "email": applicant.email,
+            "dob": getattr(applicant, "dob", None),
             "degree": applicant.degree,
             "experience_years": applicant.experience_years,
             "preferred_course": applicant.preferred_course,
+            "location_country": getattr(applicant, "location_country", None),
+            "location_state": getattr(applicant, "location_state", None),
             "status": applicant.status,
             "submitted_at": applicant.submitted_at.isoformat() if applicant.submitted_at else None,
-            "cv_url": applicant.cv_url,
+            "cv_filename": getattr(applicant, "cv_filename", None),
+            "cv_url": getattr(applicant, "cv_url", None),
+            "review_comment": getattr(applicant, "review_comment", None),
         }), 200
 
     except ValueError as e:
@@ -160,6 +162,7 @@ def update_status(applicant_id):
             }), 400
 
         new_status = body["status"]
+        admin_comment = body.get("admin_comment")
 
         if not isinstance(new_status, str):
             return jsonify({
@@ -167,7 +170,7 @@ def update_status(applicant_id):
             }), 400
 
         service = AdminService()
-        service.update_status(applicant_id, new_status)
+        service.update_status(applicant_id, new_status, admin_comment)
 
         return jsonify({"message": "Status updated successfully"}), 200
 

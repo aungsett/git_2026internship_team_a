@@ -65,10 +65,10 @@
 
                 <select class="filter-select bg-white text-sm" id="degreeFilter">
                     <option value="">Filter by Degree</option>
-                    <option value="B.Tech">B.Tech</option>
-                    <option value="M.Tech">M.Tech</option>
-                    <option value="MS">MS</option>
-                    <option value="IC+">IC+</option>
+                    <option value="highschool">High School</option>
+                    <option value="bachelors">Bachelor's Degree</option>
+                    <option value="masters">Master's Degree</option>
+                    <option value="phd">PhD</option>
                 </select>
 
                 <select class="filter-select bg-white text-sm" id="statusFilter">
@@ -76,13 +76,14 @@
                     <option value="Pending">Pending</option>
                     <option value="Shortlisted">Shortlisted</option>
                     <option value="Rejected">Rejected</option>
+                    <option value="Accepted">Accepted</option>
                 </select>
 
                 <select class="filter-select bg-white text-sm" id="experienceFilter">
                     <option value="">Filter by experience</option>
                     <option value="0">0 years</option>
-                    <option value="2+">2+ years</option>
-                    <option value="4+">4+ years</option>
+                    <option value="2">2+ years</option>
+                    <option value="4">4+ years</option>
                 </select>
 
                 <button class="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium shadow-sm flex items-center gap-2">
@@ -94,10 +95,22 @@
             </div>
 
             <!-- Stats Summary -->
-            <div class="text-right text-sm border-l-4 border-blue-500 pl-4 py-1">
-                <div class="font-semibold text-gray-500">Total displayed: <span class="text-gray-900" id="totalCount">12</span></div>
-                <div class="text-orange-600">Pending: <span class="font-bold" id="pendingCount">0</span></div>
-                <div class="text-green-600">Shortlisted: <span class="font-bold" id="shortlistedCount">0</span></div>
+            <div class="text-right text-sm border-l-4 border-blue-500 pl-4 py-1 space-y-0.5">
+                <div class="font-semibold text-gray-500">
+                    Total displayed: <span class="text-gray-900" id="totalCount">12</span>
+                </div>
+                <div class="text-orange-600">
+                    Pending: <span class="font-bold" id="pendingCount">0</span>
+                </div>
+                <div class="text-green-600">
+                    Shortlisted: <span class="font-bold" id="shortlistedCount">0</span>
+                </div>
+                <div class="text-red-600">
+                    Rejected: <span class="font-bold" id="rejectedCount">0</span>
+                </div>
+                <div class="text-blue-600">
+                    Accepted: <span class="font-bold" id="acceptedCount">0</span>
+                </div>
             </div>
         </div>
 
@@ -164,24 +177,21 @@
     </div>
 
     <script>
-        // Data with randomized status
-        const statuses = ["Pending", "Shortlisted"];
-        const getRandomStatus = () => statuses[Math.floor(Math.random() * statuses.length)];
+        const API_BASE = "http://127.0.0.1:5000";
+        const token = localStorage.getItem("admin_id_token");
+        if (!token) {
+            // No token -> go back to login
+            window.location.href = "/admin-login";
+        }
 
-        const applicants = [
-            { id: "60001", name: "John Smith", email: "john@123.com", degree: "IC+", exp: "2+", course: "Basic Training", status: getRandomStatus(), date: "14-01-2026" },
-            { id: "60002", name: "Aditya Das", email: "ad@123.com", degree: "B.Tech", exp: "4+", course: "JLPT N1", status: getRandomStatus(), date: "12-12-2022" },
-            { id: "60003", name: "Sam Edwards", email: "se@123.com", degree: "MS", exp: "3+", course: "JLPT N2", status: getRandomStatus(), date: "04-07-2025" },
-            { id: "60004", name: "Jane Doe", email: "jd@123.com", degree: "IC+", exp: "0", course: "JLPT N5", status: getRandomStatus(), date: "13-11-2023" },
-            { id: "60005", name: "Harshit Kumar", email: "hk@123.com", degree: "M.Tech", exp: "3+", course: "JLPT N3", status: getRandomStatus(), date: "30-05-2021" },
-            { id: "60006", name: "Akane Yanagi", email: "ay@123.com", degree: "BS", exp: "0", course: "Basic Training", status: getRandomStatus(), date: "16-09-2023" },
-            { id: "60007", name: "Prathmesh Sai", email: "ps@123.com", degree: "B.Tech", exp: "2+", course: "JLPT N4", status: getRandomStatus(), date: "23-03-2025" },
-            { id: "60008", name: "Samar Sen", email: "ss@123.com", degree: "IC+", exp: "4+", course: "JLPT N1", status: getRandomStatus(), date: "09-08-2024" },
-            { id: "60009", name: "Priya Sharma", email: "priya.s@example.com", degree: "B.Tech", exp: "1+", course: "JLPT N5", status: getRandomStatus(), date: "10-02-2026" },
-            { id: "60010", name: "Michael Chen", email: "m.chen@example.com", degree: "MS", exp: "4+", course: "JLPT N1", status: getRandomStatus(), date: "15-01-2026" },
-            { id: "60011", name: "Sarah Johnson", email: "sarah.j@example.com", degree: "IC+", exp: "2+", course: "Basic Training", status: getRandomStatus(), date: "20-12-2025" },
-            { id: "60012", name: "Kenji Sato", email: "k.sato@example.com", degree: "M.Tech", exp: "3+", course: "JLPT N2", status: getRandomStatus(), date: "05-02-2026" }
-        ];
+        let applicants = [];
+
+        function formatDate(iso) {
+            if (!iso) return "";
+            const d = new Date(iso);
+            if (Number.isNaN(d.getTime())) return String(iso);
+            return d.toLocaleString();
+        }
 
         function renderTable(data) {
             const tbody = document.getElementById('applicantTableBody');
@@ -224,6 +234,8 @@
             document.getElementById('totalCount').textContent = data.length;
             document.getElementById('pendingCount').textContent = data.filter(a => a.status === 'Pending').length;
             document.getElementById('shortlistedCount').textContent = data.filter(a => a.status === 'Shortlisted').length;
+            document.getElementById('rejectedCount').textContent = data.filter(a => a.status === 'Rejected').length;
+            document.getElementById('acceptedCount').textContent = data.filter(a => a.status === 'Accepted').length;
         }
 
         function getStatusClass(status) {
@@ -236,20 +248,7 @@
         }
 
         function viewApplicant(id) {
-            const app = applicants.find(a => a.id === id);
-            if (!app) return;
-
-            document.getElementById('modalName').textContent = `Details for ${app.name}`;
-            document.getElementById('modalBody').innerHTML = `
-                <div class="text-gray-500">Applicant ID:</div><div class="font-semibold">${app.id}</div>
-                <div class="text-gray-500">Email:</div><div class="font-semibold">${app.email}</div>
-                <div class="text-gray-500">Degree:</div><div class="font-semibold">${app.degree}</div>
-                <div class="text-gray-500">Experience:</div><div class="font-semibold">${app.exp} years</div>
-                <div class="text-gray-500">Preferred Japanese Course:</div><div class="font-semibold">${app.course}</div>
-                <div class="text-gray-500">Status:</div><div class="font-semibold">${app.status}</div>
-                <div class="text-gray-500">Submitted At:</div><div class="font-semibold">${app.date}</div>
-            `;
-            document.getElementById('viewModal').classList.remove('hidden');
+            window.location.href = `/admin/applicants/${id}/detail`;
         }
 
         function closeModal() {
@@ -267,7 +266,7 @@
                 const matchesSearch = app.name.toLowerCase().includes(search) || app.email.toLowerCase().includes(search) || app.id.includes(search);
                 const matchesDegree = !degree || app.degree === degree;
                 const matchesStatus = !status || app.status === status;
-                const matchesExp = !exp || app.exp === exp;
+                const matchesExp = !exp || (Number(app.exp) >= Number(exp));
                 
                 return matchesSearch && matchesDegree && matchesStatus && matchesExp;
             });
@@ -281,8 +280,32 @@
         document.getElementById('statusFilter').addEventListener('change', filterData);
         document.getElementById('experienceFilter').addEventListener('change', filterData);
 
-        // Initial Render
-        renderTable(applicants);
+        async function loadApplicants() {
+            const resp = await fetch(`${API_BASE}/admin/applicants?page=1&limit=200`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (!resp.ok) {
+                throw new Error(`Failed to load applicants (${resp.status})`);
+            }
+            const payload = await resp.json();
+            applicants = (payload.data || []).map(a => ({
+                id: String(a.applicant_id),
+                name: a.full_name || "",
+                email: a.email || "",
+                degree: a.degree || "",
+                exp: String(a.experience_years ?? ""),
+                course: a.preferred_course || "",
+                status: a.status || "Pending",
+                date: formatDate(a.submitted_at),
+            }));
+            renderTable(applicants);
+        }
+
+        // Initial Render from backend
+        loadApplicants().catch(err => {
+            console.error(err);
+            alert("Failed to load applicants. Check backend logs and admin auth.");
+        });
     </script>
 </body>
 </html>

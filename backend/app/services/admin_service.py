@@ -40,14 +40,14 @@ class AdminService:
 
         return applicant
 
-    def update_status(self, applicant_id: int, new_status: str) -> bool:
+    def update_status(self, applicant_id: int, new_status: str, admin_comment: str | None = None) -> bool:
 
         valid_statuses = [s.value for s in ApplicantStatus]
 
         if new_status not in valid_statuses:
             raise ValueError("Invalid status value")
 
-        updated = ApplicantRepository.update_status(applicant_id, new_status)
+        updated = ApplicantRepository.update_status(applicant_id, new_status, admin_comment)
 
         if not updated:
             raise ValueError("Applicant not found")
