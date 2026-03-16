@@ -148,6 +148,33 @@ def get_applicant(applicant_id):
 
 
 # ---------------------------
+# DELETE /admin/applicants/<id>
+# ---------------------------
+@bp.route("/applicants/<int:applicant_id>", methods=["DELETE"])
+def delete_applicant(applicant_id):
+    try:
+        require_admin()
+
+        service = AdminService()
+        service.delete_applicant(applicant_id)
+
+        return jsonify({"message": "Applicant deleted successfully"}), 200
+
+    except ValueError as e:
+        return jsonify({
+            "error": {"code": 404, "message": str(e)}
+        }), 404
+
+    except HTTPException as e:
+        return jsonify({"error": {"code": e.code, "message": e.description}}), e.code
+
+    except Exception:
+        return jsonify({
+            "error": {"code": 500, "message": "Internal server error"}
+        }), 500
+
+
+# ---------------------------
 # PUT /admin/applicants/<id>/status
 # ---------------------------
 @bp.route("/applicants/<int:applicant_id>/status", methods=["PUT"])

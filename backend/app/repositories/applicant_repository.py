@@ -136,3 +136,18 @@ class ApplicantRepository:
                     item["review_comment"] = admin_comment
                 return True
         return False
+
+    @staticmethod
+    def delete(applicant_id: int) -> bool:
+        """Delete an applicant by ID. Returns True if deleted, False if not found."""
+        if _HAS_ORM:
+            doc = ApplicantDoc.objects(applicant_id=applicant_id).first()
+            if doc:
+                doc.delete()
+                return True
+            return False
+        for i, item in enumerate(_in_memory_store):
+            if item.get("applicant_id") == applicant_id:
+                _in_memory_store.pop(i)
+                return True
+        return False

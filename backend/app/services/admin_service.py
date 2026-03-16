@@ -54,6 +54,12 @@ class AdminService:
 
         return True
 
+    def delete_applicant(self, applicant_id: int) -> bool:
+        deleted = ApplicantRepository.delete(applicant_id)
+        if not deleted:
+            raise ValueError("Applicant not found")
+        return True
+
     def export_csv(self, filters: Dict[str, Any]) -> str:
 
         applicants, _ = self.list_applicants(filters, page=1, limit=100000)

@@ -92,6 +92,13 @@
                     </svg>
                     Export to CSV
                 </button>
+
+                <button id="deleteSelectedBtn" type="button" class="hidden px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium shadow-sm flex items-center gap-2 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete candidate record(s)
+                </button>
             </div>
 
             <!-- Stats Summary -->
@@ -120,7 +127,7 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr>
-                            <th class="w-10"><input type="checkbox" class="rounded"></th>
+                            <th class="w-10"><input type="checkbox" id="selectAll" class="rounded" title="Select all"></th>
                             <th>Applicant ID</th>
                             <th>Name</th>
                             <th>Email</th>
@@ -185,6 +192,8 @@
         }
 
         let applicants = [];
+        const selectedIds = new Set();
+        let lastRenderedData = [];
 
         function formatDate(iso) {
             if (!iso) return "";
@@ -193,11 +202,21 @@
             return d.toLocaleString();
         }
 
+        function updateDeleteButtonVisibility() {
+            const btn = document.getElementById('deleteSelectedBtn');
+            if (selectedIds.size > 0) {
+                btn.classList.remove('hidden');
+            } else {
+                btn.classList.add('hidden');
+            }
+        }
+
         function renderTable(data) {
+            lastRenderedData = data;
             const tbody = document.getElementById('applicantTableBody');
             tbody.innerHTML = data.map(app => `
                 <tr class="transition-colors">
-                    <td><input type="checkbox" class="rounded"></td>
+                    <td><input type="checkbox" class="rounded row-checkbox" data-applicant-id="${app.id}" ${selectedIds.has(app.id) ? 'checked' : ''}></td>
                     <td class="font-medium text-gray-500">${app.id}</td>
                     <td class="font-medium">${app.name}</td>
                     <td class="text-gray-500">${app.email}</td>
@@ -236,6 +255,17 @@
             document.getElementById('shortlistedCount').textContent = data.filter(a => a.status === 'Shortlisted').length;
             document.getElementById('rejectedCount').textContent = data.filter(a => a.status === 'Rejected').length;
             document.getElementById('acceptedCount').textContent = data.filter(a => a.status === 'Accepted').length;
+            syncSelectAllCheckbox();
+            updateDeleteButtonVisibility();
+        }
+
+        function syncSelectAllCheckbox() {
+            const selectAll = document.getElementById('selectAll');
+            if (!selectAll) return;
+            const visibleIds = lastRenderedData.map(a => a.id);
+            const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
+            selectAll.checked = allSelected;
+            selectAll.indeterminate = visibleIds.some(id => selectedIds.has(id)) && !allSelected;
         }
 
         function getStatusClass(status) {
@@ -243,6 +273,7 @@
                 case 'Pending': return 'bg-orange-100 text-orange-700';
                 case 'Shortlisted': return 'bg-green-100 text-green-700';
                 case 'Rejected': return 'bg-red-100 text-red-700';
+                case 'Accepted': return 'bg-blue-100 text-blue-700';
                 default: return 'bg-gray-100 text-gray-700';
             }
         }
@@ -273,6 +304,54 @@
 
             renderTable(filtered);
         }
+
+        // Row checkbox: toggle selection (event delegation)
+        document.getElementById('applicantTableBody').addEventListener('change', function(e) {
+            const cb = e.target;
+            if (!cb.classList.contains('row-checkbox')) return;
+            const id = cb.getAttribute('data-applicant-id');
+            if (!id) return;
+            if (cb.checked) selectedIds.add(id);
+            else selectedIds.delete(id);
+            syncSelectAllCheckbox();
+            updateDeleteButtonVisibility();
+        });
+
+        document.getElementById('selectAll').addEventListener('change', function() {
+            if (this.checked) {
+                lastRenderedData.forEach(a => selectedIds.add(a.id));
+            } else {
+                lastRenderedData.forEach(a => selectedIds.delete(a.id));
+            }
+            lastRenderedData.forEach(a => {
+                const rowCb = document.querySelector(`.row-checkbox[data-applicant-id="${a.id}"]`);
+                if (rowCb) rowCb.checked = this.checked;
+            });
+            updateDeleteButtonVisibility();
+        });
+
+        document.getElementById('deleteSelectedBtn').addEventListener('click', async function() {
+            const ids = Array.from(selectedIds);
+            if (ids.length === 0) return;
+            const msg = ids.length === 1
+                ? 'Delete this candidate record? This cannot be undone.'
+                : `Delete ${ids.length} candidate records? This cannot be undone.`;
+            if (!confirm(msg)) return;
+            const token = localStorage.getItem('admin_id_token');
+            let failed = 0;
+            for (const id of ids) {
+                const resp = await fetch(`${API_BASE}/admin/applicants/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                if (!resp.ok) failed++;
+            }
+            if (failed > 0) {
+                alert(`Failed to delete ${failed} record(s). Check console.`);
+            }
+            ids.forEach(id => selectedIds.delete(id));
+            applicants = applicants.filter(a => !ids.includes(a.id));
+            syncSelectAllCheckbox();
+            updateDeleteButtonVisibility();
+            filterData();
+        });
 
         // Event Listeners
         document.getElementById('searchInput').addEventListener('input', filterData);
