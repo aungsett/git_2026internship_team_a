@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, Response, abort
+from flask import Blueprint, request, jsonify, Response, abort, session
 from werkzeug.exceptions import HTTPException, Unauthorized
 from backend.app.services.admin_service import AdminService
 from backend.app.services.auth_service import AuthService
@@ -33,6 +33,21 @@ def require_admin():
 def ping():
     require_admin()
     return jsonify({"status": "ok"}), 200
+
+
+# ---------------------------
+# POST /admin/session — bind verified Firebase token to Flask session (for HTML pages)
+# ---------------------------
+@bp.route("/session", methods=["POST"])
+def establish_session():
+    try:
+        require_admin()
+        session["admin_authenticated"] = True
+        return jsonify({"ok": True}), 200
+    except HTTPException as e:
+        return jsonify({"error": {"code": e.code, "message": e.description}}), e.code
+    except Exception:
+        return jsonify({"error": {"code": 500, "message": "Internal server error"}}), 500
 
 
 # ---------------------------
@@ -106,52 +121,51 @@ def list_applicants():
 
 
 # ---------------------------
-# GET /admin/applicants/<id>
+# GET / DELETE /admin/applicants/<id>
+# (Single route: Flask only registers one rule per path; duplicate @route decorators
+# can drop methods and cause 405 Method Not Allowed.)
 # ---------------------------
-@bp.route("/applicants/<int:applicant_id>", methods=["GET"])
-def get_applicant(applicant_id):
-    try:
-        require_admin()
+@bp.route("/applicants/<int:applicant_id>", methods=["GET", "DELETE"])
+def applicant_by_id(applicant_id):
+    if request.method == "GET":
+        try:
+            require_admin()
 
-        service = AdminService()
-        applicant = service.get_applicant_detail(applicant_id)
+            service = AdminService()
+            applicant = service.get_applicant_detail(applicant_id)
 
-        return jsonify({
-            "applicant_id": applicant.applicant_id,
-            "full_name": applicant.full_name,
-            "email": applicant.email,
-            "dob": getattr(applicant, "dob", None),
-            "degree": applicant.degree,
-            "experience_years": applicant.experience_years,
-            "preferred_course": applicant.preferred_course,
-            "location_country": getattr(applicant, "location_country", None),
-            "location_state": getattr(applicant, "location_state", None),
-            "status": applicant.status,
-            "submitted_at": applicant.submitted_at.isoformat() if applicant.submitted_at else None,
-            "cv_filename": getattr(applicant, "cv_filename", None),
-            "cv_url": getattr(applicant, "cv_url", None),
-            "review_comment": getattr(applicant, "review_comment", None),
-        }), 200
+            return jsonify({
+                "applicant_id": applicant.applicant_id,
+                "full_name": applicant.full_name,
+                "email": applicant.email,
+                "dob": getattr(applicant, "dob", None),
+                "degree": applicant.degree,
+                "experience_years": applicant.experience_years,
+                "preferred_course": applicant.preferred_course,
+                "location_country": getattr(applicant, "location_country", None),
+                "location_state": getattr(applicant, "location_state", None),
+                "status": applicant.status,
+                "submitted_at": applicant.submitted_at.isoformat() if applicant.submitted_at else None,
+                "cv_filename": getattr(applicant, "cv_filename", None),
+                "cv_url": getattr(applicant, "cv_url", None),
+                "comments": getattr(applicant, "comments", None),
+                "review_comment": getattr(applicant, "review_comment", None),
+            }), 200
 
-    except ValueError as e:
-        return jsonify({
-            "error": {"code": 404, "message": str(e)}
-        }), 404
+        except ValueError as e:
+            return jsonify({
+                "error": {"code": 404, "message": str(e)}
+            }), 404
 
-    except HTTPException as e:
-        return jsonify({"error": {"code": e.code, "message": e.description}}), e.code
+        except HTTPException as e:
+            return jsonify({"error": {"code": e.code, "message": e.description}}), e.code
 
-    except Exception:
-        return jsonify({
-            "error": {"code": 500, "message": "Internal server error"}
-        }), 500
+        except Exception:
+            return jsonify({
+                "error": {"code": 500, "message": "Internal server error"}
+            }), 500
 
-
-# ---------------------------
-# DELETE /admin/applicants/<id>
-# ---------------------------
-@bp.route("/applicants/<int:applicant_id>", methods=["DELETE"])
-def delete_applicant(applicant_id):
+    # DELETE
     try:
         require_admin()
 

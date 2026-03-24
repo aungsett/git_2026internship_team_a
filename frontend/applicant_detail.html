@@ -65,6 +65,11 @@
         </div>
 
         <div class="mt-6">
+          <div class="muted mb-2">Comments from applicant</div>
+          <div id="applicantComments" class="text-sm bg-white border border-gray-200 rounded p-3 whitespace-pre-wrap text-gray-800 min-h-[2.5rem]"></div>
+        </div>
+
+        <div class="mt-6">
           <div class="muted mb-2">CV Document</div>
           <div class="cv-file">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14 2v6h6"/></svg>
@@ -137,6 +142,13 @@
       setTimeout(()=> t.style.display = 'none', 2000);
     }
 
+    function formatSubmittedAt(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return String(iso);
+      return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+    }
+
     let CURRENT = null;
 
     async function loadApplicant() {
@@ -166,7 +178,16 @@
         document.getElementById('course').textContent = a.preferred_course || "";
         document.getElementById('location').textContent =
           [a.location_country, a.location_state].filter(Boolean).join(", ");
-        document.getElementById('submittedAt').textContent = a.submitted_at || "";
+        document.getElementById('submittedAt').textContent = formatSubmittedAt(a.submitted_at);
+
+        const ac = document.getElementById('applicantComments');
+        if (a.comments && String(a.comments).trim()) {
+          ac.textContent = a.comments;
+          ac.classList.remove('text-gray-400', 'italic');
+        } else {
+          ac.textContent = 'No comments provided.';
+          ac.classList.add('text-gray-400', 'italic');
+        }
 
         document.getElementById('cvFilename').textContent = a.cv_filename || "";
         document.getElementById('cvSize').textContent = ""; // size not tracked in DB

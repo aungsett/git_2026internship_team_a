@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, url_for
 from backend.app.config.database import init_db
 from backend.app.routes.applicant_routes import applicant_bp
 from backend.app.routes.admin_routes import bp as admin_bp
@@ -20,6 +20,9 @@ def create_app():
     # Register API blueprints
     app.register_blueprint(applicant_bp)
     app.register_blueprint(admin_bp)
+
+    def _admin_html_ok():
+        return session.get("admin_authenticated") is True
 
     # ----------------------------
     # FRONTEND PAGE ROUTES
@@ -45,25 +48,33 @@ def create_app():
 
             if username == "admin" and password == "admin":
                 session["admin_logged_in"] = True
+                session["admin_authenticated"] = True
                 return redirect("/admin-dashboard")
             else:
                 return render_template("admin_login.html", error=True)
 
+        if _admin_html_ok():
+            return redirect(url_for("admin_dashboard"))
         return render_template("admin_login.html", error=False)
 
     @app.route("/admin-dashboard")
     def admin_dashboard():
+        if not _admin_html_ok():
+            return redirect(url_for("admin_login"))
         return render_template("admin_dashboard.html")
 
     # HTML detail view (API lives in admin_routes with same ID path)
     @app.route("/admin/applicants/<int:applicant_id>/detail")
     def admin_applicant_detail(applicant_id: int):  # noqa: ARG001 - id used by frontend JS via URL
+        if not _admin_html_ok():
+            return redirect(url_for("admin_login"))
         return render_template("applicant_detail.html")
 
     @app.route("/admin-logout")
     def admin_logout():
         session.pop("admin_logged_in", None)
-        return redirect("/")
+        session.pop("admin_authenticated", None)
+        return render_template("admin_logout.html")
 
     return app
 

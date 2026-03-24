@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Signing out</title>
+</head>
+<body>
+    <p class="text-gray-600" style="font-family: system-ui, sans-serif; padding: 1rem;">Signing out…</p>
+    <script>
+        try {
+            localStorage.removeItem("admin_id_token");
+        } catch (e) { /* ignore */ }
+        window.location.replace("/");
+    </script>
+    <noscript>
+        <p><a href="/">Continue to home</a></p>
+    </noscript>
+</body>
+</html>

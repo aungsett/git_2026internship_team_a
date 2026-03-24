@@ -14,31 +14,31 @@
         }
     </style>
 </head>
-<body class="portal-bg min-h-screen flex items-center justify-center px-4">
+<body class="portal-bg min-h-screen flex flex-col px-4">
 
-    <div class="max-w-xl w-full portal-card rounded-2xl shadow-2xl border border-white/60 p-10 text-center">
-        <h1 class="text-3xl md:text-4xl font-semibold mb-3 tracking-tight text-gray-900">
-            Welcome to <span class="text-blue-600">ATS Portal</span>
-        </h1>
-        <p class="text-sm md:text-base text-gray-500 mb-8">
-            Submit your application in a few simple steps.
-        </p>
+    <main class="flex-1 flex items-center justify-center py-12">
+        <div class="max-w-xl w-full portal-card rounded-2xl shadow-2xl border border-white/60 p-10 text-center">
+            <h1 class="text-3xl md:text-4xl font-semibold mb-3 tracking-tight text-gray-900">
+                Welcome to <span class="text-blue-600">ATS Portal</span>
+            </h1>
+            <p class="text-sm md:text-base text-gray-500 mb-8">
+                Submit your application in a few simple steps.
+            </p>
 
-        <a href="/apply"
-           class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base font-medium shadow-sm">
-            Start Application
+            <a href="/apply"
+               class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base font-medium shadow-sm">
+                Start Application
+            </a>
+        </div>
+    </main>
+
+    <footer class="py-6 text-center text-xs text-gray-500">
+        <a href="/admin-login" class="text-gray-500 hover:text-blue-600 underline-offset-4 hover:underline transition-colors">
+            Admin sign in
         </a>
-    </div>
-
-    <script>
-        // Secret Admin Shortcut (Ctrl + A)
-        document.addEventListener("keydown", function(event) {
-            if (event.ctrlKey && event.key === "a") {
-                event.preventDefault();
-                window.location.href = "/admin-login";
-            }
-        });
-    </script>
+        <span class="mx-2 text-gray-300">·</span>
+        <span class="text-gray-400">For authorized HR staff only</span>
+    </footer>
 
 </body>
 </html>

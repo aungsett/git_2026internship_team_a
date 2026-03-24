@@ -79,32 +79,31 @@
                     <option value="Accepted">Accepted</option>
                 </select>
 
-                <select class="filter-select bg-white text-sm" id="experienceFilter">
-                    <option value="">Filter by experience</option>
-                    <option value="0">0 years</option>
-                    <option value="2">2+ years</option>
-                    <option value="4">4+ years</option>
-                </select>
+                <div class="flex flex-wrap items-center gap-2">
+                    <select class="filter-select bg-white text-sm" id="experienceFilter" title="Built from current applicant data">
+                        <option value="">Any experience</option>
+                    </select>
+                    <div id="customExpRangeWrap" class="hidden flex flex-wrap items-center gap-2 text-sm">
+                        <label for="expCustomMin" class="text-gray-600 whitespace-nowrap">Min (yrs)</label>
+                        <input type="number" id="expCustomMin" min="0" step="0.5" class="w-20 border border-gray-300 rounded px-2 py-1.5 text-sm" placeholder="0">
+                        <span class="text-gray-400">–</span>
+                        <label for="expCustomMax" class="text-gray-600 whitespace-nowrap">Max (yrs)</label>
+                        <input type="number" id="expCustomMax" min="0" step="0.5" class="w-20 border border-gray-300 rounded px-2 py-1.5 text-sm" placeholder="∞">
+                    </div>
+                </div>
 
-                <button class="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium shadow-sm flex items-center gap-2">
+                <button type="button" id="exportCsvBtn" class="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium shadow-sm flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
                     Export to CSV
-                </button>
-
-                <button id="deleteSelectedBtn" type="button" class="hidden px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium shadow-sm flex items-center gap-2 transition-opacity">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Delete candidate record(s)
                 </button>
             </div>
 
             <!-- Stats Summary -->
             <div class="text-right text-sm border-l-4 border-blue-500 pl-4 py-1 space-y-0.5">
                 <div class="font-semibold text-gray-500">
-                    Total displayed: <span class="text-gray-900" id="totalCount">12</span>
+                    Total matching: <span class="text-gray-900" id="totalCount">0</span>
                 </div>
                 <div class="text-orange-600">
                     Pending: <span class="font-bold" id="pendingCount">0</span>
@@ -148,13 +147,13 @@
             <!-- Pagination Footer -->
             <div class="px-6 py-4 flex items-center justify-center border-t border-gray-200">
                 <nav class="flex items-center gap-4">
-                    <button class="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-700">
+                    <button type="button" id="prevPageBtn" class="p-2 rounded-full transition-colors text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:pointer-events-none" aria-label="Previous page">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
-                    <span class="text-sm font-medium">Page 1 of 1</span>
-                    <button class="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-700">
+                    <span id="pageInfo" class="text-sm font-medium min-w-[8rem] text-center">Page 1 of 1</span>
+                    <button type="button" id="nextPageBtn" class="p-2 rounded-full transition-colors text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:pointer-events-none" aria-label="Next page">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                         </svg>
@@ -191,6 +190,8 @@
             window.location.href = "/admin-login";
         }
 
+        const PAGE_SIZE = 10;
+        let currentPage = 1;
         let applicants = [];
         const selectedIds = new Set();
         let lastRenderedData = [];
@@ -199,19 +200,63 @@
             if (!iso) return "";
             const d = new Date(iso);
             if (Number.isNaN(d.getTime())) return String(iso);
-            return d.toLocaleString();
+            return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
         }
 
-        function updateDeleteButtonVisibility() {
-            const btn = document.getElementById('deleteSelectedBtn');
-            if (selectedIds.size > 0) {
-                btn.classList.remove('hidden');
-            } else {
-                btn.classList.add('hidden');
+        function csvEscapeCell(value) {
+            const s = String(value ?? "");
+            if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+            return s;
+        }
+
+        function exportSelectedToCsv() {
+            const ids = Array.from(selectedIds);
+            if (ids.length === 0) {
+                alert("Select one or more applicants (checkboxes), then click Export to CSV.");
+                return;
             }
+            const rows = ids
+                .map(id => applicants.find(a => a.id === id))
+                .filter(Boolean)
+                .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+            const header = [
+                "Applicant ID",
+                "Full Name",
+                "Email",
+                "Degree",
+                "Experience (years)",
+                "Preferred Japanese Course",
+                "Status",
+                "Submitted At"
+            ];
+            const lines = [
+                header.join(","),
+                ...rows.map(r =>
+                    [
+                        r.id,
+                        r.name,
+                        r.email,
+                        r.degree,
+                        r.exp,
+                        r.course,
+                        r.status,
+                        r.date
+                    ].map(csvEscapeCell).join(",")
+                )
+            ];
+            const csv = "\uFEFF" + lines.join("\r\n");
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            const stamp = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `applicants_export_${stamp}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
-        function renderTable(data) {
+        function renderTable(data, statsSource) {
+            const stats = statsSource !== undefined ? statsSource : data;
             lastRenderedData = data;
             const tbody = document.getElementById('applicantTableBody');
             tbody.innerHTML = data.map(app => `
@@ -230,7 +275,7 @@
                     </td>
                     <td class="text-gray-500">${app.date}</td>
                     <td>
-                        <div class="flex items-center justify-center gap-4">
+                        <div class="flex items-center justify-center">
                             <button onclick="viewApplicant('${app.id}')" class="flex flex-col items-center group">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -238,25 +283,27 @@
                                 </svg>
                                 <span class="text-[10px] text-gray-400 group-hover:text-blue-600">View</span>
                             </button>
-                            <button class="flex flex-col items-center group">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                                <span class="text-[10px] text-gray-400 group-hover:text-gray-900">Edit</span>
-                            </button>
                         </div>
                     </td>
                 </tr>
             `).join('');
             
-            // Update stats based on filtered data
-            document.getElementById('totalCount').textContent = data.length;
-            document.getElementById('pendingCount').textContent = data.filter(a => a.status === 'Pending').length;
-            document.getElementById('shortlistedCount').textContent = data.filter(a => a.status === 'Shortlisted').length;
-            document.getElementById('rejectedCount').textContent = data.filter(a => a.status === 'Rejected').length;
-            document.getElementById('acceptedCount').textContent = data.filter(a => a.status === 'Accepted').length;
+            // Stats reflect full filtered set, not just current page
+            document.getElementById('totalCount').textContent = stats.length;
+            document.getElementById('pendingCount').textContent = stats.filter(a => a.status === 'Pending').length;
+            document.getElementById('shortlistedCount').textContent = stats.filter(a => a.status === 'Shortlisted').length;
+            document.getElementById('rejectedCount').textContent = stats.filter(a => a.status === 'Rejected').length;
+            document.getElementById('acceptedCount').textContent = stats.filter(a => a.status === 'Accepted').length;
             syncSelectAllCheckbox();
-            updateDeleteButtonVisibility();
+        }
+
+        function updatePaginationUI(totalFiltered, totalPages) {
+            const info = document.getElementById('pageInfo');
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+            if (info) info.textContent = `Page ${currentPage} of ${totalPages}`;
+            if (prevBtn) prevBtn.disabled = currentPage <= 1;
+            if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
         }
 
         function syncSelectAllCheckbox() {
@@ -286,23 +333,107 @@
             document.getElementById('viewModal').classList.add('hidden');
         }
 
-        // Search and Filter Logic
-        function filterData() {
+        function parseExperienceYears(exp) {
+            if (exp === null || exp === undefined) return NaN;
+            const s = String(exp).trim();
+            if (s === "") return NaN;
+            const direct = Number(s);
+            if (Number.isFinite(direct)) return direct;
+            const m = s.match(/^(\d+(?:\.\d+)?)/);
+            if (m) return Number(m[1]);
+            return NaN;
+        }
+
+        function toggleCustomExpVisibility() {
+            const wrap = document.getElementById("customExpRangeWrap");
+            const show = document.getElementById("experienceFilter").value === "custom";
+            wrap.classList.toggle("hidden", !show);
+        }
+
+        function rebuildExperienceFilterOptions() {
+            const sel = document.getElementById("experienceFilter");
+            const prev = sel.value;
+            const unique = [...new Set(
+                applicants.map(a => parseExperienceYears(a.exp)).filter(n => Number.isFinite(n))
+            )].sort((a, b) => a - b);
+
+            sel.innerHTML = "";
+            const optAny = document.createElement("option");
+            optAny.value = "";
+            optAny.textContent = "Any experience";
+            sel.appendChild(optAny);
+
+            unique.forEach(v => {
+                const o = document.createElement("option");
+                o.value = "gte:" + v;
+                o.textContent = "≥ " + v + " yr" + (v === 1 ? "" : "s");
+                sel.appendChild(o);
+            });
+
+            const oCust = document.createElement("option");
+            oCust.value = "custom";
+            oCust.textContent = "Custom range…";
+            sel.appendChild(oCust);
+
+            const allowed = new Set(["", "custom", ...unique.map(v => "gte:" + v)]);
+            sel.value = allowed.has(prev) ? prev : "";
+            toggleCustomExpVisibility();
+        }
+
+        function matchesExperienceFilter(app) {
+            const mode = document.getElementById("experienceFilter").value;
+            const y = parseExperienceYears(app.exp);
+            if (mode === "") return true;
+            if (mode === "custom") {
+                const minEl = document.getElementById("expCustomMin");
+                const maxEl = document.getElementById("expCustomMax");
+                let lo = minEl.value === "" ? -Infinity : Number(minEl.value);
+                let hi = maxEl.value === "" ? Infinity : Number(maxEl.value);
+                if (!Number.isFinite(lo)) lo = -Infinity;
+                if (!Number.isFinite(hi)) hi = Infinity;
+                if (lo > hi) {
+                    const t = lo;
+                    lo = hi;
+                    hi = t;
+                }
+                if (!Number.isFinite(y)) return false;
+                return y >= lo && y <= hi;
+            }
+            if (mode.startsWith("gte:")) {
+                const t = Number(mode.slice(4));
+                if (!Number.isFinite(y) || !Number.isFinite(t)) return false;
+                return y >= t;
+            }
+            return true;
+        }
+
+        // Search and Filter Logic + pagination (10 rows per page)
+        function filterData(resetPage) {
+            if (resetPage) currentPage = 1;
+
             const search = document.getElementById('searchInput').value.toLowerCase();
             const degree = document.getElementById('degreeFilter').value;
             const status = document.getElementById('statusFilter').value;
-            const exp = document.getElementById('experienceFilter').value;
 
             const filtered = applicants.filter(app => {
                 const matchesSearch = app.name.toLowerCase().includes(search) || app.email.toLowerCase().includes(search) || app.id.includes(search);
                 const matchesDegree = !degree || app.degree === degree;
                 const matchesStatus = !status || app.status === status;
-                const matchesExp = !exp || (Number(app.exp) >= Number(exp));
+                const matchesExp = matchesExperienceFilter(app);
                 
                 return matchesSearch && matchesDegree && matchesStatus && matchesExp;
             });
 
-            renderTable(filtered);
+            const totalFiltered = filtered.length;
+            const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const pageSlice = filtered.slice(start, start + PAGE_SIZE);
+
+            renderTable(pageSlice, filtered);
+            updatePaginationUI(totalFiltered, totalPages);
         }
 
         // Row checkbox: toggle selection (event delegation)
@@ -314,7 +445,6 @@
             if (cb.checked) selectedIds.add(id);
             else selectedIds.delete(id);
             syncSelectAllCheckbox();
-            updateDeleteButtonVisibility();
         });
 
         document.getElementById('selectAll').addEventListener('change', function() {
@@ -327,47 +457,58 @@
                 const rowCb = document.querySelector(`.row-checkbox[data-applicant-id="${a.id}"]`);
                 if (rowCb) rowCb.checked = this.checked;
             });
-            updateDeleteButtonVisibility();
         });
 
-        document.getElementById('deleteSelectedBtn').addEventListener('click', async function() {
-            const ids = Array.from(selectedIds);
-            if (ids.length === 0) return;
-            const msg = ids.length === 1
-                ? 'Delete this candidate record? This cannot be undone.'
-                : `Delete ${ids.length} candidate records? This cannot be undone.`;
-            if (!confirm(msg)) return;
-            const token = localStorage.getItem('admin_id_token');
-            let failed = 0;
-            for (const id of ids) {
-                const resp = await fetch(`${API_BASE}/admin/applicants/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-                if (!resp.ok) failed++;
+        document.getElementById('exportCsvBtn').addEventListener('click', exportSelectedToCsv);
+
+        document.getElementById('prevPageBtn').addEventListener('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                filterData(false);
             }
-            if (failed > 0) {
-                alert(`Failed to delete ${failed} record(s). Check console.`);
-            }
-            ids.forEach(id => selectedIds.delete(id));
-            applicants = applicants.filter(a => !ids.includes(a.id));
-            syncSelectAllCheckbox();
-            updateDeleteButtonVisibility();
-            filterData();
+        });
+        document.getElementById('nextPageBtn').addEventListener('click', function() {
+            currentPage++;
+            filterData(false);
         });
 
-        // Event Listeners
-        document.getElementById('searchInput').addEventListener('input', filterData);
-        document.getElementById('degreeFilter').addEventListener('change', filterData);
-        document.getElementById('statusFilter').addEventListener('change', filterData);
-        document.getElementById('experienceFilter').addEventListener('change', filterData);
+        // Reset to page 1 when search/filters change
+        document.getElementById('searchInput').addEventListener('input', function() { filterData(true); });
+        document.getElementById('degreeFilter').addEventListener('change', function() { filterData(true); });
+        document.getElementById('statusFilter').addEventListener('change', function() { filterData(true); });
+        document.getElementById('experienceFilter').addEventListener('change', function() {
+            toggleCustomExpVisibility();
+            filterData(true);
+        });
+        document.getElementById('expCustomMin').addEventListener('input', function() {
+            if (document.getElementById('experienceFilter').value === 'custom') filterData(true);
+        });
+        document.getElementById('expCustomMax').addEventListener('input', function() {
+            if (document.getElementById('experienceFilter').value === 'custom') filterData(true);
+        });
 
         async function loadApplicants() {
-            const resp = await fetch(`${API_BASE}/admin/applicants?page=1&limit=200`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            if (!resp.ok) {
-                throw new Error(`Failed to load applicants (${resp.status})`);
+            const fetchLimit = 100;
+            let page = 1;
+            const allRows = [];
+            for (;;) {
+                const resp = await fetch(
+                    `${API_BASE}/admin/applicants?page=${page}&limit=${fetchLimit}`,
+                    { headers: { "Authorization": `Bearer ${token}` } }
+                );
+                if (!resp.ok) {
+                    throw new Error(`Failed to load applicants (${resp.status})`);
+                }
+                const payload = await resp.json();
+                const batch = payload.data || [];
+                let total = Number(payload.total);
+                if (Number.isNaN(total)) total = batch.length;
+                allRows.push(...batch);
+                if (batch.length < fetchLimit || allRows.length >= total) break;
+                page += 1;
+                if (page > 500) break;
             }
-            const payload = await resp.json();
-            applicants = (payload.data || []).map(a => ({
+            applicants = allRows.map(a => ({
                 id: String(a.applicant_id),
                 name: a.full_name || "",
                 email: a.email || "",
@@ -377,7 +518,9 @@
                 status: a.status || "Pending",
                 date: formatDate(a.submitted_at),
             }));
-            renderTable(applicants);
+            currentPage = 1;
+            rebuildExperienceFilterOptions();
+            filterData(false);
         }
 
         // Initial Render from backend

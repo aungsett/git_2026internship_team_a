@@ -84,18 +84,30 @@
             // Persist token for subsequent admin API calls (dashboard, status updates, etc.)
             localStorage.setItem("admin_id_token", token);
 
-        // Send token to backend
-            const response = await fetch("http://127.0.0.1:5000/admin/ping", {
+            const response = await fetch("/admin/ping", {
                 method: "GET",
                 headers: {
                     "Authorization": "Bearer " + token
                 }
             });
 
-            if (response.ok) {
+            if (!response.ok) {
+                errorMsg.textContent = "Access denied";
+                errorMsg.classList.remove("hidden");
+                return;
+            }
+
+            const sess = await fetch("/admin/session", {
+                method: "POST",
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            });
+
+            if (sess.ok) {
                 window.location.href = "/admin-dashboard";
             } else {
-                errorMsg.textContent = "Access denied";
+                errorMsg.textContent = "Could not start admin session";
                 errorMsg.classList.remove("hidden");
             }
 
