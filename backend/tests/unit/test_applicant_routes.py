@@ -1,4 +1,5 @@
 import pytest
+from io import BytesIO
 from flask import Flask
 from unittest.mock import patch, MagicMock
 
@@ -27,16 +28,19 @@ def test_create_applicant_success(mock_service, client):
     mock_instance.create_applicant.return_value = MagicMock(applicant_id=1)
     mock_service.return_value = mock_instance
 
+    # Route requires multipart + CV (JSON-only is rejected with 400).
     response = client.post(
         "/applicants",
-        json={
+        data={
             "full_name": "Harshit",
             "dob": "2000-01-01",
             "email": "harshit@test.com",
             "degree": "B.Tech",
-            "experience_years": 2,
-            "preferred_course": "AI"
-        }
+            "experience_years": "2",
+            "preferred_course": "AI",
+            "cv": (BytesIO(b"%PDF-1.4 fake"), "resume.pdf"),
+        },
+        content_type="multipart/form-data",
     )
 
     assert response.status_code == 201
@@ -86,14 +90,16 @@ def test_create_applicant_internal_error(mock_service, client):
 
     response = client.post(
         "/applicants",
-        json={
+        data={
             "full_name": "Harshit",
             "dob": "2000-01-01",
             "email": "harshit@test.com",
             "degree": "B.Tech",
-            "experience_years": 2,
-            "preferred_course": "AI"
-        }
+            "experience_years": "2",
+            "preferred_course": "AI",
+            "cv": (BytesIO(b"%PDF-1.4 fake"), "resume.pdf"),
+        },
+        content_type="multipart/form-data",
     )
 
     assert response.status_code == 500

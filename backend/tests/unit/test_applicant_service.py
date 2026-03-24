@@ -1,4 +1,6 @@
-from app.services.applicant_service import ApplicantService
+import pytest
+
+from backend.app.services.applicant_service import ApplicantService
 
 
 class DummyFile:
@@ -7,10 +9,17 @@ class DummyFile:
 
 
 def test_create_application(monkeypatch):
-
     monkeypatch.setattr(
-        "app.services.storage_service.StorageService.upload_cv",
-        lambda self, file, applicant_id: "http://test.com/cv.pdf"
+        "backend.app.services.applicant_service.StorageService.upload_cv",
+        lambda self, file, applicant_id: "http://test.com/cv.pdf",
+    )
+    monkeypatch.setattr(
+        "backend.app.services.applicant_service.ApplicantRepository.get_by_email",
+        lambda email: None,
+    )
+    monkeypatch.setattr(
+        "backend.app.services.applicant_service.ApplicantRepository.create",
+        lambda payload: payload,
     )
 
     service = ApplicantService()
@@ -24,7 +33,7 @@ def test_create_application(monkeypatch):
         "preferred_course": "AI",
         "location_country": "India",
         "location_state": "Delhi",
-        "comments": "test"
+        "comments": "test",
     }
 
     file = DummyFile("resume.pdf")

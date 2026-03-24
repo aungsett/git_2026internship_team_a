@@ -68,16 +68,23 @@ def test_list_applicants(mock_auth, mock_service, client):
 def test_get_applicant(mock_auth, mock_service, client):
     mock_auth_success(mock_auth)
 
+    # Plain values only: unset MagicMock attributes are nested mocks and break jsonify().
     fake_applicant = MagicMock()
     fake_applicant.applicant_id = 1
     fake_applicant.full_name = "Harshit"
     fake_applicant.email = "harshit@test.com"
+    fake_applicant.dob = None
     fake_applicant.degree = "B.Tech"
     fake_applicant.experience_years = 2
     fake_applicant.preferred_course = "Backend"
+    fake_applicant.location_country = None
+    fake_applicant.location_state = None
     fake_applicant.status = "Pending"
     fake_applicant.submitted_at = None
+    fake_applicant.cv_filename = None
     fake_applicant.cv_url = "http://example.com/cv.pdf"
+    fake_applicant.comments = None
+    fake_applicant.review_comment = None
 
     mock_service.return_value.get_applicant_detail.return_value = fake_applicant
 
