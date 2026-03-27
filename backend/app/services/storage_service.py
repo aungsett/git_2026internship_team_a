@@ -1,4 +1,5 @@
 # backend/app/services/storage_service.py
+from pathlib import Path
 from typing import Union
 from backend.app.config.settings import settings
 from backend.app.utils.validators import validate_cv_filename
@@ -35,22 +36,27 @@ class StorageService:
         # validate extension, raises ValueError on invalid extension
         validate_cv_filename(filename)
 
-        # Build Cloudinary upload; keeping it simple: upload the raw file to folder
-        # You can set public_id or use applicant_id as part of public_id if you want naming
-        public_id = None
-        if isinstance(applicant_id_or_filename, int):
-            # make a sensible public id using applicant id + original name (without spaces)
-            orig = getattr(file_obj, "filename", filename)
-            safe_name = orig.replace(" ", "_")
-            public_id = f"ats/cv/{applicant_id_or_filename}_{safe_name}"
+        # Keep original basename + extension in Cloudinary so downloads preserve type and name.
+        # We isolate files by applicant id folder to avoid filename collisions.
+        original_name = Path(filename).name
+        stem = Path(original_name).stem.replace(" ", "_")
+        ext = Path(original_name).suffix.lower().lstrip(".")
 
-        upload_kwargs = {"resource_type": "raw"}
-        if public_id:
-            # cloudinary expects public_id without folder when folder param used; we'll pass folder via public_id prefix
-            # to keep things simple, pass folder and let cloudinary create unique names
+        upload_kwargs = {
+            "resource_type": "raw",
+            "use_filename": True,
+            "unique_filename": False,
+            "overwrite": True,
+        }
+        if isinstance(applicant_id_or_filename, int):
+            upload_kwargs["folder"] = f"ats/cv/{applicant_id_or_filename}"
+            upload_kwargs["public_id"] = stem
+        else:
             upload_kwargs["folder"] = "ats/cv"
-            # we still won't pass public_id to avoid collisions; optional: pass public_id=...
-            # upload_kwargs["public_id"] = f"{applicant_id_or_filename}_{safe_name}"
+            upload_kwargs["public_id"] = stem
+
+        if ext:
+            upload_kwargs["format"] = ext
 
         # cloudinary.uploader.upload accepts file-like object or path
         res = cloudinary.uploader.upload(file_obj, **upload_kwargs)

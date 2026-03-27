@@ -1,3 +1,7 @@
+import os
+import re
+from urllib.parse import urlparse
+import cloudinary.utils
 from flask import Blueprint, request, jsonify, Response, abort, session
 from werkzeug.exceptions import HTTPException, Unauthorized
 from backend.app.services.admin_service import AdminService
@@ -227,6 +231,48 @@ def update_status(applicant_id):
         return jsonify({
             "error": {"code": 500, "message": "Internal server error"}
         }), 500
+
+
+# ---------------------------
+# GET /admin/applicants/<id>/cv
+# ---------------------------
+@bp.route("/applicants/<int:applicant_id>/cv", methods=["GET"])
+def download_cv(applicant_id):
+    try:
+        require_admin()
+
+        service = AdminService()
+        applicant = service.get_applicant_detail(applicant_id)
+        cv_url = getattr(applicant, "cv_url", None)
+        cv_filename = getattr(applicant, "cv_filename", None) or f"applicant_{applicant_id}_cv"
+
+        if not cv_url:
+            return jsonify({"error": {"code": 404, "message": "CV not found"}}), 404
+
+        # Generate a signed Cloudinary download URL for this raw asset.
+        parsed = urlparse(cv_url)
+        path = parsed.path
+        m = re.search(r"/raw/upload/(?:.*/)?v\d+/(.+)$", path)
+        if not m:
+            return jsonify({"error": {"code": 400, "message": "Invalid CV storage URL"}}), 400
+
+        public_with_ext = m.group(1)  # e.g. ats/cv/60016/resume-temp.pdf
+        download_url = cloudinary.utils.private_download_url(
+            public_with_ext,
+            None,
+            resource_type="raw",
+            type="upload",
+            attachment=cv_filename,
+            expires_at=None,
+        )
+        return jsonify({"download_url": download_url}), 200
+
+    except ValueError as e:
+        return jsonify({"error": {"code": 404, "message": str(e)}}), 404
+    except HTTPException as e:
+        return jsonify({"error": {"code": e.code, "message": e.description}}), e.code
+    except Exception:
+        return jsonify({"error": {"code": 500, "message": "Internal server error"}}), 500
 
 
 # ---------------------------

@@ -77,7 +77,7 @@
               <div id="cvFilename" class="font-medium"></div>
               <div id="cvSize" class="text-xs muted"></div>
             </div>
-            <button onclick="downloadCV()" class="ml-4 px-3 py-1 border rounded bg-white hover:bg-gray-100 text-sm">Download CV</button>
+            <button onclick="downloadCV()" class="ml-4 px-3 py-1 border rounded bg-white hover:bg-gray-100 text-sm">View  CV</button>
           </div>
         </div>
       </section>
@@ -200,11 +200,26 @@
       }
     }
 
-    function downloadCV(){
-      if (CURRENT && CURRENT.cv_url) {
-        window.open(CURRENT.cv_url, "_blank");
-      } else {
-        alert("No CV URL available.");
+    async function downloadCV(){
+      const token = ensureToken();
+      if (!token || !CURRENT) return;
+      try {
+        const resp = await fetch(`${API_BASE}/admin/applicants/${CURRENT.applicant_id}/cv`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!resp.ok) {
+          throw new Error(`Download failed (${resp.status})`);
+        }
+
+        const payload = await resp.json();
+        if (!payload.download_url) {
+          throw new Error("Missing download URL");
+        }
+
+        window.open(payload.download_url, "_blank");
+      } catch (e) {
+        console.error(e);
+        alert("Could not download CV.");
       }
     }
 
