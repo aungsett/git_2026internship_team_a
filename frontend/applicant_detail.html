@@ -149,6 +149,21 @@
       return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
     }
 
+    function formatDegree(degree) {
+      switch ((degree || "").toLowerCase()) {
+        case "highschool":
+          return "High School";
+        case "bachelors":
+          return "Bachelor's";
+        case "masters":
+          return "Master's";
+        case "phd":
+          return "PhD";
+        default:
+          return degree || "";
+      }
+    }
+
     let CURRENT = null;
 
     async function loadApplicant() {
@@ -173,7 +188,7 @@
         document.getElementById('fullName').textContent = a.full_name || "";
         document.getElementById('email').textContent = a.email || "";
         document.getElementById('dob').textContent = a.dob || "";
-        document.getElementById('degree').textContent = a.degree || "";
+        document.getElementById('degree').textContent = formatDegree(a.degree);
         document.getElementById('exp').textContent = a.experience_years ?? "";
         document.getElementById('course').textContent = a.preferred_course || "";
         document.getElementById('location').textContent =

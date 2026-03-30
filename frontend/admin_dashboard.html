@@ -203,6 +203,21 @@
             return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
         }
 
+        function formatDegree(degree) {
+            switch ((degree || "").toLowerCase()) {
+                case "highschool":
+                    return "High School";
+                case "bachelors":
+                    return "Bachelor's";
+                case "masters":
+                    return "Master's";
+                case "phd":
+                    return "PhD";
+                default:
+                    return degree || "";
+            }
+        }
+
         function csvEscapeCell(value) {
             const s = String(value ?? "");
             if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
@@ -236,7 +251,7 @@
                         r.id,
                         r.name,
                         r.email,
-                        r.degree,
+                        formatDegree(r.degree),
                         r.exp,
                         r.course,
                         r.status,
@@ -265,7 +280,7 @@
                     <td class="font-medium text-gray-500">${app.id}</td>
                     <td class="font-medium">${app.name}</td>
                     <td class="text-gray-500">${app.email}</td>
-                    <td>${app.degree}</td>
+                    <td>${formatDegree(app.degree)}</td>
                     <td>${app.exp}</td>
                     <td>${app.course}</td>
                     <td>
