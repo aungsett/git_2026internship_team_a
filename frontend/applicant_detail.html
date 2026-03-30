@@ -109,7 +109,7 @@
   <div id="toast" class="toast">Saved</div>
 
   <script>
-    const API_BASE = "http://127.0.0.1:5000";
+    const API_BASE = window.location.origin;
 
     function getApplicantIdFromPath() {
       const parts = window.location.pathname.split("/").filter(Boolean);
