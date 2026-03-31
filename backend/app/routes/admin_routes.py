@@ -1,6 +1,7 @@
 import os
 import re
 from urllib.parse import urlparse
+from datetime import timezone
 import cloudinary.utils
 from flask import Blueprint, request, jsonify, Response, abort, session
 from werkzeug.exceptions import HTTPException, Unauthorized
@@ -8,6 +9,16 @@ from backend.app.services.admin_service import AdminService
 from backend.app.services.auth_service import AuthService
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
+
+
+def serialize_datetime_utc(value):
+    if not value:
+        return None
+    if getattr(value, "tzinfo", None) is None:
+        value = value.replace(tzinfo=timezone.utc)
+    else:
+        value = value.astimezone(timezone.utc)
+    return value.isoformat().replace("+00:00", "Z")
 
 
 # ---------------------------
@@ -105,7 +116,7 @@ def list_applicants():
                 "experience_years": a.experience_years,
                 "preferred_course": a.preferred_course,
                 "status": a.status,
-                "submitted_at": a.submitted_at.isoformat() if a.submitted_at else None,
+                "submitted_at": serialize_datetime_utc(a.submitted_at),
             })
 
         return jsonify({
@@ -149,7 +160,7 @@ def applicant_by_id(applicant_id):
                 "location_country": getattr(applicant, "location_country", None),
                 "location_state": getattr(applicant, "location_state", None),
                 "status": applicant.status,
-                "submitted_at": applicant.submitted_at.isoformat() if applicant.submitted_at else None,
+                "submitted_at": serialize_datetime_utc(applicant.submitted_at),
                 "cv_filename": getattr(applicant, "cv_filename", None),
                 "cv_url": getattr(applicant, "cv_url", None),
                 "comments": getattr(applicant, "comments", None),

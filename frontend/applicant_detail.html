@@ -146,7 +146,15 @@
       if (!iso) return "";
       const d = new Date(iso);
       if (Number.isNaN(d.getTime())) return String(iso);
-      return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+      return `${d.toLocaleString("en-US", {
+        timeZone: "Asia/Tokyo",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+      })} JST`;
     }
 
     function formatDegree(degree) {
